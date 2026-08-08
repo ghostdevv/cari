@@ -17,6 +17,11 @@ pub enum Loader {
     Velocity,
     Paper,
     Quilt,
+    Bukkit,
+    Folia,
+    Spigot,
+    Purpur,
+    Neoforge,
 }
 
 fn default_false() -> bool {
@@ -50,8 +55,8 @@ pub struct Server {
 impl Server {
     pub fn content_dir(&self) -> PathBuf {
         match self.cfg.loader {
-            Loader::Fabric | Loader::Quilt => self.path.join("./mods"),
-            Loader::Velocity | Loader::Paper => self.path.join("./plugins"),
+            Loader::Fabric | Loader::Quilt | Loader::Neoforge => self.path.join("./mods"),
+            _ => self.path.join("./plugins"),
         }
     }
 }
