@@ -6,8 +6,31 @@ use crate::{
 use color_eyre::eyre::{self, Result};
 use futures::stream::{self, StreamExt, TryStreamExt};
 use heck::ToTitleCase;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use yansi::Paint;
+
+async fn should_download(name: &str, file_path: &PathBuf, sha512: &str) -> Result<bool> {
+    if file_path.exists() {
+        let sum = sha512sum(file_path).await?;
+
+        if sum == sha512 {
+            println!(" {} {}", "✔".green(), name.blue().dim());
+            return Ok(false);
+        } else {
+            println!(
+                " {} {} {}",
+                "↻".yellow(),
+                name.blue().dim(),
+                "(hash mismatch, redownloading)".dim()
+            );
+            trash::delete(file_path)?;
+        }
+    } else {
+        println!(" {} {}", "+".green(), name.blue().dim());
+    }
+
+    Ok(true)
+}
 
 async fn run_item(server: &Server, item: &Content, content_dir: &Path) -> Result<Vec<Download>> {
     let mut version = modrinth::get_project_version(
@@ -24,32 +47,16 @@ async fn run_item(server: &Server, item: &Content, content_dir: &Path) -> Result
 
     let file_data = version.files.remove(0);
     let file_path = content_dir.join(&file_data.filename);
+
     let mut downloads = Vec::new();
 
-    if file_path.exists() {
-        let sum = sha512sum(&file_path).await?;
-
-        if sum == file_data.hashes.sha512 {
-            println!(" {} {}", "✔".green(), item.id.blue().dim());
-            return Ok(Vec::with_capacity(0));
-        } else {
-            println!(
-                " {} {} {}",
-                "↻".yellow(),
-                item.id.blue().dim(),
-                "(hash mismatch, redownloading)".dim()
-            );
-            trash::delete(&file_path)?;
-        }
-    } else {
-        println!(" {} {}", "+".green(), item.id.blue().dim());
+    if should_download(&item.id, &file_path, &file_data.hashes.sha512).await? {
+        downloads.push(Download {
+            url: file_data.url,
+            dest: file_path,
+            sha512: file_data.hashes.sha512,
+        });
     }
-
-    downloads.push(Download {
-        url: file_data.url,
-        dest: file_path,
-        sha512: file_data.hashes.sha512,
-    });
 
     Ok(downloads)
 }
@@ -68,6 +75,17 @@ pub async fn run(servers: Vec<Server>) -> Result<()> {
 
         if !content_dir.exists() {
             std::fs::create_dir_all(&content_dir)?;
+        }
+
+        let runtime_str = server.cfg.runtime.to_string();
+        let runtime_path = content_dir.join(format!("{}.jar", runtime_str));
+
+        if should_download(&runtime_str, &runtime_path, server.cfg.runtime.sha512()).await? {
+            downloader.add(
+                server.cfg.runtime.to_download_url(&server.cfg.game_version),
+                runtime_path,
+                server.cfg.runtime.sha512().to_owned(),
+            );
         }
 
         let mut downloads = stream::iter(&server.cfg.content)

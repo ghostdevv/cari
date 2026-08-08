@@ -4,12 +4,6 @@ use color_eyre::eyre::{OptionExt, Result};
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 
-// #[derive(Debug, Deserialize, JsonSchema)]
-// pub struct Resource {
-//     pub url: String,
-//     pub sha256: String,
-// }
-
 #[derive(Debug, Serialize, PartialEq, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Loader {
@@ -36,10 +30,81 @@ pub struct Content {
     external: bool,
 }
 
+#[derive(strum_macros::Display, Debug, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum Runtime {
+    #[serde(rename_all = "camelCase")]
+    Fabric {
+        loader_version: String,
+        installer_version: String,
+        sha512: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Velocity {
+        version: String,
+        sha256: String,
+        sha512: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Paper {
+        version: String,
+        sha256: String,
+        sha512: String,
+    },
+}
+
+const PAPERMC_BASE_URL: &str = "https://fill-data.papermc.io/v1/objects";
+
+impl Runtime {
+    pub fn to_download_url(&self, game_version: &str) -> String {
+        match self {
+            Runtime::Fabric {
+                loader_version,
+                installer_version,
+                ..
+            } => {
+                format!(
+                    "https://meta.fabricmc.net/v2/versions/loader/{}/{}/{}/server/jar",
+                    game_version, loader_version, installer_version
+                )
+            }
+            Runtime::Velocity {
+                version, sha256, ..
+            } => {
+                format!("{}/{}/velocity-{}.jar", PAPERMC_BASE_URL, sha256, version)
+            }
+            Runtime::Paper {
+                version, sha256, ..
+            } => {
+                format!("{}/{}/paper-{}.jar", PAPERMC_BASE_URL, sha256, version)
+            }
+        }
+    }
+
+    pub fn sha512(&self) -> &str {
+        match self {
+            Runtime::Fabric { sha512, .. } => sha512,
+            Runtime::Velocity { sha512, .. } => sha512,
+            Runtime::Paper { sha512, .. } => sha512,
+        }
+    }
+}
+
+impl From<Runtime> for String {
+    fn from(val: Runtime) -> Self {
+        match val {
+            Runtime::Fabric { .. } => "fabric".into(),
+            Runtime::Velocity { .. } => "velocity".into(),
+            Runtime::Paper { .. } => "paper".into(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    // pub server: Resource,
+    pub runtime: Runtime,
     pub loader: Loader,
     pub game_version: String,
     pub content: Vec<Content>,

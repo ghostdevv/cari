@@ -60,6 +60,13 @@ pub async fn run(servers: Vec<Server>, server: Option<String>) -> Result<()> {
             server.name.to_title_case().blue().bold().underline(),
         );
 
+        println!(
+            " {} {} {}",
+            "━".dim(),
+            server.cfg.runtime.to_string().to_title_case().blue().dim(),
+            "(todo, can't compare versions)".dim()
+        );
+
         stream::iter(&server.cfg.content)
             .map(|item| run_item(&server, item))
             .buffer_unordered(8)
