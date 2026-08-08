@@ -33,6 +33,7 @@ pub enum VersionStatus {
 pub enum VersionType {
     Release,
     Beta, // todo discount beta versions when finding latest
+    Alpha,
 }
 
 #[derive(Debug, Deserialize)]
