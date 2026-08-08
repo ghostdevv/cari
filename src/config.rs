@@ -28,7 +28,7 @@ pub struct Content {
     pub id: String,
     pub version: String,
     #[serde(default = "default_false")]
-    pub skip: bool,
+    external: bool,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -60,7 +60,9 @@ fn load_config(path: &PathBuf) -> Result<Option<Config>> {
     match std::fs::File::open(path) {
         Ok(file) => {
             let reader = std::io::BufReader::new(file);
-            Ok(Some(serde_json::from_reader(reader)?))
+            let mut cfg: Config = serde_json::from_reader(reader)?;
+            cfg.content.retain(|c| !c.external);
+            Ok(Some(cfg))
         }
         Err(e) => match e.kind() {
             std::io::ErrorKind::NotFound => Ok(None),

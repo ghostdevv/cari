@@ -14,10 +14,8 @@ pub fn run(servers: Vec<Server>, server: Option<String>) -> Result<()> {
         println!("Opening content for {}", server.name);
 
         for item in server.cfg.content {
-            if !item.skip {
-                println!("  Opening {}", item.id);
-                open::that(format!("https://modrinth.com/mod/{}", item.id))?;
-            }
+            println!("  Opening {}", item.id);
+            open::that(format!("https://modrinth.com/mod/{}", item.id))?;
         }
     }
 

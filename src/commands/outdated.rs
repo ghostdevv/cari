@@ -21,10 +21,6 @@ pub async fn run(servers: Vec<Server>, server: Option<String>) -> Result<()> {
         );
 
         for item in server.cfg.content {
-            if item.skip {
-                continue;
-            }
-
             let latest_version = modrinth::get_latest_project_version(
                 &item.id,
                 &server.cfg.loader,

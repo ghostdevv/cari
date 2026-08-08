@@ -16,10 +16,6 @@ pub async fn run(servers: Vec<Server>) -> Result<()> {
         let mut downloader = Downloader::new();
 
         for item in &server.cfg.content {
-            if item.skip {
-                continue;
-            }
-
             let mut version = modrinth::get_project_version(
                 &item.id,
                 &item.version,
