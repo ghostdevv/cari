@@ -47,6 +47,15 @@ pub struct Server {
     pub cfg: Config,
 }
 
+impl Server {
+    pub fn content_dir(&self) -> PathBuf {
+        match self.cfg.loader {
+            Loader::Fabric | Loader::Quilt => self.path.join("./mods"),
+            Loader::Velocity | Loader::Paper => self.path.join("./plugins"),
+        }
+    }
+}
+
 fn load_config(path: &PathBuf) -> Result<Option<Config>> {
     match std::fs::File::open(path) {
         Ok(file) => {

@@ -1,9 +1,8 @@
-use crate::config::Loader;
+use crate::{config::Loader, fs::USER_AGENT};
 use color_eyre::eyre::{self, Result, eyre};
 use serde::{Deserialize, Serialize, Serializer};
 
 const MODRINTH_BASE_URL: &str = "https://api.modrinth.com/v2";
-const USER_AGENT: &str = "bedrocko (+https://bedrocko.com)";
 
 fn as_json_array<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
 where
