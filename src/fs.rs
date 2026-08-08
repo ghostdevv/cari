@@ -1,7 +1,9 @@
 use color_eyre::eyre::{self, Result};
 use futures::stream::{self, StreamExt, TryStreamExt};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use sha2::{Digest, Sha512};
 use std::path::PathBuf;
+use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use yansi::Paint;
@@ -39,15 +41,39 @@ impl Downloader {
         self.0.append(downloads);
     }
 
-    async fn download_item(&self, client: &reqwest::Client, download: &Download) -> Result<()> {
+    async fn download_item(
+        &self,
+        client: &reqwest::Client,
+        download: &Download,
+        multi: &MultiProgress,
+    ) -> Result<()> {
         let filename = download
             .dest
             .file_name()
             .map(|name| name.to_string_lossy().to_string())
             .unwrap_or_else(|| download.url.clone());
 
-        println!(" {} {}", "↓".blue(), filename.dim());
+        let pb = multi.add(ProgressBar::new_spinner());
+        pb.set_style(
+            ProgressStyle::with_template(" {spinner:.blue} {msg}")
+                .unwrap()
+                .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠋"),
+        );
+        pb.set_message(filename.clone());
+        pb.enable_steady_tick(Duration::from_millis(80));
 
+        let result = self.download_file(client, download).await;
+
+        pb.set_style(ProgressStyle::with_template(" {msg}").unwrap());
+        match &result {
+            Ok(()) => pb.finish_with_message(format!("{} {}", "✔".green(), filename)),
+            Err(_) => pb.finish_with_message(format!("{} {}", "✗".red(), filename)),
+        }
+
+        result
+    }
+
+    async fn download_file(&self, client: &reqwest::Client, download: &Download) -> Result<()> {
         let mut stream = client
             .get(&download.url)
             .send()
@@ -69,8 +95,6 @@ impl Downloader {
             eyre::bail!("sha512 mismatch");
         }
 
-        println!(" {} {}", "✔".green(), filename);
-
         Ok(())
     }
 
@@ -83,9 +107,10 @@ impl Downloader {
         println!("   {}", "Downloading".blue().bold().underline());
 
         let client = reqwest::Client::builder().user_agent(USER_AGENT).build()?;
+        let multi = MultiProgress::new();
 
         stream::iter(&self.0)
-            .map(|item| self.download_item(&client, item))
+            .map(|item| self.download_item(&client, item, &multi))
             .buffer_unordered(8)
             .try_collect::<Vec<_>>()
             .await?;
