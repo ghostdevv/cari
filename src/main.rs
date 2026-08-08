@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::config::load_server;
 use clap::Parser;
 use color_eyre::eyre::Result;
@@ -30,7 +32,7 @@ async fn main() -> Result<()> {
         .map(|ent| load_server(ent?.path()))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
-        .filter_map(|c| c)
+        .flatten()
         .collect::<Vec<_>>();
 
     match cli {
@@ -110,7 +112,7 @@ async fn main() -> Result<()> {
                 }
 
                 if index != server_count - 1 {
-                    println!("");
+                    println!();
                 }
             }
         }

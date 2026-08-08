@@ -1,5 +1,5 @@
 use crate::config::Loader;
-use color_eyre::eyre::{OptionExt, Result, eyre};
+use color_eyre::eyre::{self, Result, eyre};
 use serde::{Deserialize, Serialize, Serializer};
 
 const MODRINTH_BASE_URL: &str = "https://api.modrinth.com/v2";
@@ -109,9 +109,9 @@ pub async fn get_project_version(
         .await?;
 
     if !version.loaders.contains(loader) {
-        return Err(eyre!("version does not support loader"));
+        eyre::bail!("version does not support loader");
     } else if !version.game_versions.contains(&game_version.to_string()) {
-        return Err(eyre!("version does not support game version"));
+        eyre::bail!("version does not support game version");
     }
 
     Ok(version)
