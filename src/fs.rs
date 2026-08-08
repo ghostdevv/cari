@@ -1,20 +1,19 @@
 use color_eyre::eyre::{self, Result};
-use futures_util::StreamExt;
+use futures::stream::{self, StreamExt, TryStreamExt};
 use sha2::{Digest, Sha512};
-use std::io::Read;
 use std::path::PathBuf;
 use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub const USER_AGENT: &str = "bedrocko (+https://bedrocko.com)";
 
-pub fn sha512sum(path: &PathBuf) -> Result<String> {
-    let mut file = std::fs::File::open(path)?;
+pub async fn sha512sum(path: &PathBuf) -> Result<String> {
+    let mut file = tokio::fs::File::open(path).await?;
     let mut hasher = Sha512::new();
     let mut buffer = [0u8; 8192];
 
     loop {
-        let n = file.read(&mut buffer)?;
+        let n = file.read(&mut buffer).await?;
         if n == 0 {
             break;
         }
@@ -35,6 +34,38 @@ impl Downloader {
         self.0.push(Download { url, dest, sha512 });
     }
 
+    pub fn add_from(&mut self, downloads: &mut Vec<Download>) {
+        self.0.append(downloads);
+    }
+
+    async fn download_item(&self, client: &reqwest::Client, download: &Download) -> Result<()> {
+        println!("downloading {}", download.url);
+        let mut stream = client
+            .get(&download.url)
+            .send()
+            .await?
+            .error_for_status()?
+            .bytes_stream();
+
+        let mut file = File::create(&download.dest).await?;
+        let mut hasher = Sha512::new();
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk?;
+            hasher.update(&chunk);
+            file.write_all(&chunk).await?;
+        }
+        file.flush().await?;
+
+        if hex::encode(hasher.finalize()) != download.sha512 {
+            eyre::bail!("sha512 mismatch");
+        }
+
+        println!("  done");
+
+        Ok(())
+    }
+
     pub async fn download(self) -> Result<()> {
         if self.0.is_empty() {
             return Ok(());
@@ -42,31 +73,11 @@ impl Downloader {
 
         let client = reqwest::Client::builder().user_agent(USER_AGENT).build()?;
 
-        for download in self.0 {
-            println!("downloading {}", download.url);
-            let mut stream = client
-                .get(download.url)
-                .send()
-                .await?
-                .error_for_status()?
-                .bytes_stream();
-
-            let mut file = File::create(&download.dest).await?;
-            let mut hasher = Sha512::new();
-
-            while let Some(chunk) = stream.next().await {
-                let chunk = chunk?;
-                hasher.update(&chunk);
-                file.write_all(&chunk).await?;
-            }
-            file.flush().await?;
-
-            if hex::encode(hasher.finalize()) != download.sha512 {
-                eyre::bail!("sha512 mismatch");
-            }
-
-            println!("  done");
-        }
+        stream::iter(&self.0)
+            .map(|item| self.download_item(&client, item))
+            .buffer_unordered(8)
+            .try_collect::<Vec<_>>()
+            .await?;
 
         Ok(())
     }
