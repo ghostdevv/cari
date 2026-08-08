@@ -5,3 +5,14 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
+chrono = { version = "0.4.45", features = ["serde"] }
+clap = { version = "4.6.6", features = ["derive"] }
+color-eyre = "0.6.5"
+heck = "0.5.0"
+open = "5.4.1"
+reqwest = { version = "0.13.4", features = ["json", "query", "stream"] }
+schemars = "1.2.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+tokio = { version = "1.53.1", features = ["full"] }
+yansi = "1.0.1"
