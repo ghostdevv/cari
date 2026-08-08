@@ -41,6 +41,10 @@ impl Downloader {
         self.0.append(downloads);
     }
 
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     async fn download_item(
         &self,
         client: &reqwest::Client,

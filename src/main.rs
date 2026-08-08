@@ -19,7 +19,10 @@ enum Cli {
         #[clap(short, long)]
         server: Option<String>,
     },
-    Install,
+    Install {
+        #[clap(long)]
+        dry_run: bool,
+    },
 }
 
 #[tokio::main]
@@ -43,8 +46,8 @@ async fn main() -> Result<()> {
         Cli::Outdated { server } => {
             commands::outdated::run(servers, server).await?;
         }
-        Cli::Install => {
-            commands::install::run(servers).await?;
+        Cli::Install { dry_run } => {
+            commands::install::run(servers, dry_run).await?;
         }
     }
 
