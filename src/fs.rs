@@ -4,12 +4,13 @@ use sha2::{Digest, Sha512};
 use std::path::PathBuf;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use yansi::Paint;
 
 pub const USER_AGENT: &str = "bedrocko (+https://bedrocko.com)";
 
 pub async fn sha512sum(path: &PathBuf) -> Result<String> {
     let mut file = tokio::fs::File::open(path).await?;
-    let mut hasher = Sha512::new();
+    let mut hasher = <Sha512 as Digest>::new();
     let mut buffer = [0u8; 8192];
 
     loop {
@@ -39,7 +40,14 @@ impl Downloader {
     }
 
     async fn download_item(&self, client: &reqwest::Client, download: &Download) -> Result<()> {
-        println!("downloading {}", download.url);
+        let filename = download
+            .dest
+            .file_name()
+            .map(|name| name.to_string_lossy().to_string())
+            .unwrap_or_else(|| download.url.clone());
+
+        println!(" {} {}", "↓".blue(), filename.dim());
+
         let mut stream = client
             .get(&download.url)
             .send()
@@ -48,7 +56,7 @@ impl Downloader {
             .bytes_stream();
 
         let mut file = File::create(&download.dest).await?;
-        let mut hasher = Sha512::new();
+        let mut hasher = <Sha512 as Digest>::new();
 
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
@@ -61,7 +69,7 @@ impl Downloader {
             eyre::bail!("sha512 mismatch");
         }
 
-        println!("  done");
+        println!(" {} {}", "✔".green(), filename);
 
         Ok(())
     }
@@ -70,6 +78,9 @@ impl Downloader {
         if self.0.is_empty() {
             return Ok(());
         }
+
+        println!();
+        println!("   {}", "Downloading".blue().bold().underline());
 
         let client = reqwest::Client::builder().user_agent(USER_AGENT).build()?;
 

@@ -5,7 +5,9 @@ use crate::{
 };
 use color_eyre::eyre::{self, Result};
 use futures::stream::{self, StreamExt, TryStreamExt};
+use heck::ToTitleCase;
 use std::path::Path;
+use yansi::Paint;
 
 async fn run_item(server: &Server, item: &Content, content_dir: &Path) -> Result<Vec<Download>> {
     let mut version = modrinth::get_project_version(
@@ -28,15 +30,19 @@ async fn run_item(server: &Server, item: &Content, content_dir: &Path) -> Result
         let sum = sha512sum(&file_path).await?;
 
         if sum == file_data.hashes.sha512 {
-            println!("Skipping {} (sha512 sum matches)", file_data.filename);
+            println!(" {} {}", "✔".green(), item.id.blue().dim());
             return Ok(Vec::with_capacity(0));
         } else {
             println!(
-                "Trashing {} as sha512 sum doesn't match",
-                file_data.filename
+                " {} {} {}",
+                "↻".yellow(),
+                item.id.blue().dim(),
+                "(hash mismatch, redownloading)".dim()
             );
             trash::delete(&file_path)?;
         }
+    } else {
+        println!(" {} {}", "+".green(), item.id.blue().dim());
     }
 
     downloads.push(Download {
@@ -50,8 +56,14 @@ async fn run_item(server: &Server, item: &Content, content_dir: &Path) -> Result
 
 pub async fn run(servers: Vec<Server>) -> Result<()> {
     let mut downloader = Downloader::new();
+    let server_count = servers.len();
 
-    for server in servers {
+    for (index, server) in servers.into_iter().enumerate() {
+        println!(
+            "   {}",
+            server.name.to_title_case().blue().bold().underline(),
+        );
+
         let content_dir = server.content_dir();
 
         if !content_dir.exists() {
@@ -68,6 +80,10 @@ pub async fn run(servers: Vec<Server>) -> Result<()> {
             .collect::<Vec<_>>();
 
         downloader.add_from(&mut downloads);
+
+        if index != server_count - 1 {
+            println!();
+        }
     }
 
     downloader.download().await?;
