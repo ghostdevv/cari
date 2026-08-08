@@ -71,14 +71,8 @@ pub async fn run(servers: Vec<Server>) -> Result<()> {
             server.name.to_title_case().blue().bold().underline(),
         );
 
-        let content_dir = server.content_dir();
-
-        if !content_dir.exists() {
-            std::fs::create_dir_all(&content_dir)?;
-        }
-
         let runtime_str = server.cfg.runtime.to_string();
-        let runtime_path = content_dir.join(format!("{}.jar", runtime_str));
+        let runtime_path = server.path.join(format!("{}.jar", runtime_str));
 
         if should_download(&runtime_str, &runtime_path, server.cfg.runtime.sha512()).await? {
             downloader.add(
@@ -86,6 +80,12 @@ pub async fn run(servers: Vec<Server>) -> Result<()> {
                 runtime_path,
                 server.cfg.runtime.sha512().to_owned(),
             );
+        }
+
+        let content_dir = server.content_dir();
+
+        if !content_dir.exists() {
+            std::fs::create_dir_all(&content_dir)?;
         }
 
         let mut downloads = stream::iter(&server.cfg.content)
