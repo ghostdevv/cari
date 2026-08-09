@@ -19,6 +19,14 @@ enum Cli {
         #[clap(short, long)]
         server: Option<String>,
     },
+    Update {
+        #[clap(short, long)]
+        server: Option<String>,
+        #[clap(long)]
+        dry_run: bool,
+        #[clap(long)]
+        open: bool,
+    },
     Install {
         #[clap(long)]
         dry_run: bool,
@@ -45,6 +53,13 @@ async fn main() -> Result<()> {
         }
         Cli::Outdated { server } => {
             commands::outdated::run(servers, server).await?;
+        }
+        Cli::Update {
+            server,
+            dry_run,
+            open,
+        } => {
+            commands::update::run(servers, server, dry_run, open).await?;
         }
         Cli::Install { dry_run } => {
             commands::install::run(servers, dry_run).await?;

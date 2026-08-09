@@ -4,8 +4,9 @@ use color_eyre::eyre::{OptionExt, Result};
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, PartialEq, Deserialize, JsonSchema)]
+#[derive(strum_macros::Display, Debug, Serialize, PartialEq, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum Loader {
     Fabric,
     Velocity,

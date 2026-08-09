@@ -17,7 +17,7 @@ open = "5.4.1"
 reqwest = { version = "0.13.4", features = ["json", "query", "stream"] }
 schemars = "1.2.2"
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
+serde_json = { version = "1.0.151", features = ["preserve_order"] }
 sha2 = "0.11.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
