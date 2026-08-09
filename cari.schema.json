@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "type": "object",
+  "properties": {
+    "runtime": {
+      "$ref": "#/$defs/Runtime"
+    },
+    "loader": {
+      "$ref": "#/$defs/Loader"
+    },
+    "gameVersion": {
+      "type": "string"
+    },
+    "content": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Content"
+      }
+    }
+  },
+  "required": [
+    "runtime",
+    "loader",
+    "gameVersion",
+    "content"
+  ],
+  "$defs": {
+    "Runtime": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "loaderVersion": {
+              "type": "string"
+            },
+            "installerVersion": {
+              "type": "string"
+            },
+            "sha512": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "fabric"
+            }
+          },
+          "required": [
+            "type",
+            "loaderVersion",
+            "installerVersion",
+            "sha512"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            },
+            "sha512": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "velocity"
+            }
+          },
+          "required": [
+            "type",
+            "version",
+            "sha256",
+            "sha512"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            },
+            "sha512": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "paper"
+            }
+          },
+          "required": [
+            "type",
+            "version",
+            "sha256",
+            "sha512"
+          ]
+        }
+      ]
+    },
+    "Loader": {
+      "type": "string",
+      "enum": [
+        "fabric",
+        "velocity",
+        "paper",
+        "quilt",
+        "bukkit",
+        "folia",
+        "spigot",
+        "purpur",
+        "neoforge"
+      ]
+    },
+    "Content": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "external": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ]
+    }
+  }
+}

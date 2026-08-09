@@ -36,6 +36,8 @@ enum Cli {
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
+
+    #[cfg(debug_assertions)]
     config::write_schema()?;
 
     let cli = Cli::parse();

@@ -1,10 +1,11 @@
-use std::path::PathBuf;
-
 use color_eyre::eyre::{OptionExt, Result};
+#[cfg(debug_assertions)]
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
-#[derive(strum_macros::Display, Debug, Serialize, PartialEq, Deserialize, JsonSchema)]
+#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[derive(strum_macros::Display, Debug, Serialize, PartialEq, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum Loader {
@@ -23,7 +24,8 @@ fn default_false() -> bool {
     false
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[derive(Debug, Deserialize)]
 pub struct Content {
     pub id: String,
     pub version: String,
@@ -31,7 +33,8 @@ pub struct Content {
     external: bool,
 }
 
-#[derive(strum_macros::Display, Debug, Deserialize, JsonSchema)]
+#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[derive(strum_macros::Display, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum Runtime {
@@ -102,7 +105,8 @@ impl From<Runtime> for String {
     }
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     pub runtime: Runtime,
@@ -153,6 +157,7 @@ pub fn load_server(path: PathBuf) -> Result<Option<Server>> {
     Ok(cfg.map(|cfg| Server { name, path, cfg }))
 }
 
+#[cfg(debug_assertions)]
 pub fn write_schema() -> Result<()> {
     let schema_path = std::env::current_dir()?.join("./cari.schema.json");
 
