@@ -32,8 +32,21 @@ pub enum VersionStatus {
 #[serde(rename_all = "lowercase")]
 pub enum VersionType {
     Release,
-    Beta, // todo discount beta versions when finding latest
+    Beta,
     Alpha,
+}
+
+impl VersionType {
+    /// Higher values are preferred when picking the "latest" version, so
+    /// that release versions are chosen over beta/alpha ones published
+    /// more recently.
+    fn priority(&self) -> u8 {
+        match self {
+            VersionType::Release => 2,
+            VersionType::Beta => 1,
+            VersionType::Alpha => 0,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -83,7 +96,7 @@ pub async fn get_latest_project_version(
         .json::<Vec<Version>>()
         .await?
         .into_iter()
-        .max_by_key(|item| item.date_published)
+        .max_by_key(|item| (item.version_type.priority(), item.date_published))
         .ok_or_else(|| eyre!("no versions returned from api for {}", project))?;
 
     Ok(version)
