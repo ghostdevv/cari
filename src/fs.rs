@@ -8,7 +8,11 @@ use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use yansi::Paint;
 
-pub const USER_AGENT: &str = "bedrocko (+https://bedrocko.com)";
+pub const USER_AGENT: &str = concat!(
+    "cari/",
+    env!("CARGO_PKG_VERSION"),
+    " (+https://github.com/ghostdevv/cari)"
+);
 
 pub async fn sha512sum(path: &PathBuf) -> Result<String> {
     let mut file = tokio::fs::File::open(path).await?;
