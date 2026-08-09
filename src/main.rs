@@ -10,6 +10,7 @@ mod fs;
 mod modrinth;
 
 #[derive(clap::Parser)]
+#[clap(name = "cari", about, version)]
 enum Cli {
     Open {
         #[clap(short, long)]
