@@ -3,6 +3,9 @@ name = "cari"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+description = "Simple package manager for minecraft servers"
+repository = "https://github.com/ghostdevv/cari"
+include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
 chrono = { version = "0.4.45", features = ["serde"] }
