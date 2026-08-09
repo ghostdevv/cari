@@ -32,6 +32,7 @@ enum Cli {
         #[clap(long)]
         dry_run: bool,
     },
+    Init,
 }
 
 #[tokio::main]
@@ -43,29 +44,37 @@ async fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
-    let servers = std::fs::read_dir("./servers")?
-        .map(|ent| load_server(ent?.path()))
-        .collect::<Result<Vec<_>, _>>()?
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>();
-
     match cli {
-        Cli::Open { server } => {
-            commands::open::run(servers, server)?;
+        Cli::Init => {
+            commands::init::run(std::env::current_dir()?)?;
         }
-        Cli::Outdated { server } => {
-            commands::outdated::run(servers, server).await?;
-        }
-        Cli::Update {
-            server,
-            dry_run,
-            open,
-        } => {
-            commands::update::run(servers, server, dry_run, open).await?;
-        }
-        Cli::Install { dry_run } => {
-            commands::install::run(servers, dry_run).await?;
+        _ => {
+            let servers = std::fs::read_dir("./servers")?
+                .map(|ent| load_server(ent?.path()))
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
+            match cli {
+                Cli::Open { server } => {
+                    commands::open::run(servers, server)?;
+                }
+                Cli::Outdated { server } => {
+                    commands::outdated::run(servers, server).await?;
+                }
+                Cli::Update {
+                    server,
+                    dry_run,
+                    open,
+                } => {
+                    commands::update::run(servers, server, dry_run, open).await?;
+                }
+                Cli::Install { dry_run } => {
+                    commands::install::run(servers, dry_run).await?;
+                }
+                Cli::Init => unreachable!(),
+            }
         }
     }
 
