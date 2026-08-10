@@ -18,6 +18,10 @@ pub enum Loader {
     Spigot,
     Purpur,
     Neoforge,
+    Forge,
+    Sponge,
+    Bungeecord,
+    Waterfall,
 }
 
 fn default_false() -> bool {
