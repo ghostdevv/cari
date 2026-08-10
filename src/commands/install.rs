@@ -48,7 +48,7 @@ async fn run_item(
     item: &Content,
     content_dir: &Path,
     dry_run: bool,
-) -> Result<Vec<Download>> {
+) -> Result<(PathBuf, Option<Download>)> {
     let mut version =
         modrinth::get_project_version(&item.id, &item.version, &server.cfg.loader).await?;
 
@@ -66,17 +66,18 @@ async fn run_item(
     let file_data = version.files.remove(0);
     let file_path = content_dir.join(managed_filename(&file_data.filename));
 
-    let mut downloads = Vec::new();
+    let download =
+        if should_download(&item.id, &file_path, &file_data.hashes.sha512, dry_run).await? {
+            Some(Download {
+                url: file_data.url,
+                dest: file_path.clone(),
+                sha512: file_data.hashes.sha512,
+            })
+        } else {
+            None
+        };
 
-    if should_download(&item.id, &file_path, &file_data.hashes.sha512, dry_run).await? {
-        downloads.push(Download {
-            url: file_data.url,
-            dest: file_path,
-            sha512: file_data.hashes.sha512,
-        });
-    }
-
-    Ok(downloads)
+    Ok((file_path, download))
 }
 
 async fn clean_stale(content_dir: &Path, expected: &HashSet<PathBuf>, dry_run: bool) -> Result<()> {
@@ -87,6 +88,10 @@ async fn clean_stale(content_dir: &Path, expected: &HashSet<PathBuf>, dry_run: b
     let mut removed = HashSet::new();
 
     for dest in expected {
+        if !dest.exists() {
+            continue;
+        }
+
         let Some(base) = unmanaged_path(dest) else {
             continue;
         };
@@ -185,21 +190,23 @@ pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
             std::fs::create_dir_all(&content_dir)?;
         }
 
-        let mut downloads = stream::iter(&server.cfg.content)
+        let items = stream::iter(&server.cfg.content)
             .map(|item| run_item(&server, item, &content_dir, dry_run))
             .buffer_unordered(8)
             .try_collect::<Vec<_>>()
-            .await?
+            .await?;
+
+        let expected = items
+            .iter()
+            .map(|(path, _)| path.clone())
+            .collect::<HashSet<_>>();
+
+        let mut downloads = items
             .into_iter()
-            .flatten()
+            .filter_map(|(_, download)| download)
             .collect::<Vec<_>>();
 
         downloader.add_from(&mut downloads);
-
-        let expected = downloads
-            .iter()
-            .map(|download| download.dest.clone())
-            .collect::<HashSet<_>>();
 
         if dry_run {
             clean_stale(&content_dir, &expected, dry_run).await?;
