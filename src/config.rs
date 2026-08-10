@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[cfg_attr(debug_assertions, derive(JsonSchema))]
-#[derive(strum_macros::Display, Debug, Serialize, PartialEq, Deserialize)]
+#[derive(strum_macros::Display, Debug, Serialize, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum Loader {
@@ -24,7 +24,7 @@ pub enum Loader {
     Waterfall,
 }
 
-fn default_false() -> bool {
+const fn default_false() -> bool {
     false
 }
 
@@ -67,34 +67,33 @@ const PAPERMC_BASE_URL: &str = "https://fill-data.papermc.io/v1/objects";
 impl Runtime {
     pub fn to_download_url(&self, game_version: &str) -> String {
         match self {
-            Runtime::Fabric {
+            Self::Fabric {
                 loader_version,
                 installer_version,
                 ..
             } => {
                 format!(
-                    "https://meta.fabricmc.net/v2/versions/loader/{}/{}/{}/server/jar",
-                    game_version, loader_version, installer_version
+                    "https://meta.fabricmc.net/v2/versions/loader/{game_version}/{loader_version}/{installer_version}/server/jar"
                 )
             }
-            Runtime::Velocity {
+            Self::Velocity {
                 version, sha256, ..
             } => {
-                format!("{}/{}/velocity-{}.jar", PAPERMC_BASE_URL, sha256, version)
+                format!("{PAPERMC_BASE_URL}/{sha256}/velocity-{version}.jar")
             }
-            Runtime::Paper {
+            Self::Paper {
                 version, sha256, ..
             } => {
-                format!("{}/{}/paper-{}.jar", PAPERMC_BASE_URL, sha256, version)
+                format!("{PAPERMC_BASE_URL}/{sha256}/paper-{version}.jar")
             }
         }
     }
 
     pub fn sha512(&self) -> &str {
         match self {
-            Runtime::Fabric { sha512, .. } => sha512,
-            Runtime::Velocity { sha512, .. } => sha512,
-            Runtime::Paper { sha512, .. } => sha512,
+            Self::Fabric { sha512, .. }
+            | Self::Velocity { sha512, .. }
+            | Self::Paper { sha512, .. } => sha512,
         }
     }
 }

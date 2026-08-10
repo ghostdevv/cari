@@ -21,7 +21,7 @@ async fn run_item(server: &Server, item: &Content) -> Result<()> {
             "✔".green(),
             item.id.blue().dim(),
             latest_version.name
-        )
+        );
     } else {
         let current_version =
             modrinth::get_project_version(&item.id, &item.version, &server.cfg.loader).await?;
@@ -32,7 +32,7 @@ async fn run_item(server: &Server, item: &Content) -> Result<()> {
             item.id.blue().dim(),
             current_version.name.dim(),
             latest_version.name.green()
-        )
+        );
     }
 
     Ok(())

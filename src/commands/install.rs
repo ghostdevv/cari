@@ -22,18 +22,19 @@ async fn should_download(
         if sum == sha512 {
             println!(" {} {}", "✔".green(), name.blue().dim());
             return Ok(false);
+        }
+
+        println!(
+            " {} {} {}",
+            "↻".yellow(),
+            name.blue().dim(),
+            "(hash mismatch, redownloading)".dim()
+        );
+
+        if dry_run {
+            println!("   {} {}", "→".yellow(), "would move to trash".dim());
         } else {
-            println!(
-                " {} {} {}",
-                "↻".yellow(),
-                name.blue().dim(),
-                "(hash mismatch, redownloading)".dim()
-            );
-            if !dry_run {
-                trash::delete(file_path)?;
-            } else {
-                println!("   {} {}", "→".yellow(), "would move to trash".dim());
-            }
+            trash::delete(file_path)?;
         }
     } else {
         println!(" {} {}", "+".green(), name.blue().dim());
@@ -59,7 +60,7 @@ async fn run_item(
         println!(
             "warn: {} ({}) does not support game version {}",
             version.project_id, version.id, server.cfg.game_version
-        )
+        );
     }
 
     let file_data = version.files.remove(0);
@@ -161,7 +162,7 @@ pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
         );
 
         let runtime_str = server.cfg.runtime.to_string();
-        let runtime_path = server.path.join(format!("{}.jar", runtime_str));
+        let runtime_path = server.path.join(format!("{runtime_str}.jar"));
 
         if should_download(
             &runtime_str,

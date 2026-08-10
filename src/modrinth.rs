@@ -40,11 +40,11 @@ impl VersionType {
     /// Higher values are preferred when picking the "latest" version, so
     /// that release versions are chosen over beta/alpha ones published
     /// more recently.
-    fn priority(&self) -> u8 {
+    const fn priority(&self) -> u8 {
         match self {
-            VersionType::Release => 2,
-            VersionType::Beta => 1,
-            VersionType::Alpha => 0,
+            Self::Release => 2,
+            Self::Beta => 1,
+            Self::Alpha => 0,
         }
     }
 }
@@ -72,7 +72,7 @@ pub struct Version {
     pub loaders: Vec<Loader>,
     pub date_published: chrono::DateTime<chrono::Utc>,
     pub status: VersionStatus,
-    pub version_type: VersionType,
+    pub r#type: VersionType,
     pub files: Vec<VersionFile>,
 }
 
@@ -80,7 +80,7 @@ pub async fn get_project_versions(project: &str) -> Result<Vec<Version>> {
     let versions = reqwest::ClientBuilder::new()
         .user_agent(USER_AGENT)
         .build()?
-        .get(format!("{}/project/{}/version", MODRINTH_BASE_URL, project))
+        .get(format!("{MODRINTH_BASE_URL}/project/{project}/version"))
         .query(&[("include_changelog", "false")])
         .send()
         .await?
@@ -99,7 +99,7 @@ pub async fn get_latest_project_version(
     let version = reqwest::ClientBuilder::new()
         .user_agent(USER_AGENT)
         .build()?
-        .get(format!("{}/project/{}/version", MODRINTH_BASE_URL, project))
+        .get(format!("{MODRINTH_BASE_URL}/project/{project}/version"))
         .query(&VersionQuery {
             loaders: loader,
             game_versions: game_version,
@@ -111,7 +111,7 @@ pub async fn get_latest_project_version(
         .json::<Vec<Version>>()
         .await?
         .into_iter()
-        .max_by_key(|item| (item.version_type.priority(), item.date_published))
+        .max_by_key(|item| (item.r#type.priority(), item.date_published))
         .ok_or_else(|| {
             eyre!(
                 "no versions of {} found for game version {} using {} loader (check your cari.json)",
@@ -129,8 +129,7 @@ pub async fn get_project_version(project: &str, version: &str, loader: &Loader) 
         .user_agent(USER_AGENT)
         .build()?
         .get(format!(
-            "{}/project/{}/version/{}",
-            MODRINTH_BASE_URL, project, version
+            "{MODRINTH_BASE_URL}/project/{project}/version/{version}"
         ))
         .send()
         .await?

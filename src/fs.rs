@@ -53,7 +53,11 @@ pub async fn sha512sum(path: &PathBuf) -> Result<String> {
         if n == 0 {
             break;
         }
-        hasher.update(&buffer[..n]);
+        hasher.update(
+            buffer.get(..n).ok_or_else(|| {
+                eyre::eyre!("failed to get buf slice for sha512 sum at {:?}", path)
+            })?,
+        );
     }
 
     Ok(hex::encode(hasher.finalize()))
@@ -62,7 +66,7 @@ pub async fn sha512sum(path: &PathBuf) -> Result<String> {
 pub struct Downloader(Vec<Download>);
 
 impl Downloader {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self(vec![])
     }
 
@@ -74,7 +78,7 @@ impl Downloader {
         self.0.append(downloads);
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.0.len()
     }
 
@@ -84,24 +88,21 @@ impl Downloader {
         download: &Download,
         multi: &MultiProgress,
     ) -> Result<()> {
-        let filename = download
-            .dest
-            .file_name()
-            .map(|name| name.to_string_lossy().to_string())
-            .unwrap_or_else(|| download.url.clone());
+        let filename = download.dest.file_name().map_or_else(
+            || download.url.clone(),
+            |name| name.to_string_lossy().to_string(),
+        );
 
         let pb = multi.add(ProgressBar::new_spinner());
         pb.set_style(
-            ProgressStyle::with_template(" {spinner:.blue} {msg}")
-                .unwrap()
-                .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠋"),
+            ProgressStyle::with_template(" {spinner:.blue} {msg}")?.tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠋"),
         );
         pb.set_message(filename.clone());
         pb.enable_steady_tick(Duration::from_millis(80));
 
         let result = self.download_file(client, download).await;
 
-        pb.set_style(ProgressStyle::with_template(" {msg}").unwrap());
+        pb.set_style(ProgressStyle::with_template(" {msg}")?);
         match &result {
             Ok(()) => pb.finish_with_message(format!("{} {}", "✔".green(), filename)),
             Err(_) => pb.finish_with_message(format!("{} {}", "✗".red(), filename)),

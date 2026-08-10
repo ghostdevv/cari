@@ -1,8 +1,8 @@
 use color_eyre::eyre::{self, Result};
-use std::path::PathBuf;
+use std::path::Path;
 use yansi::Paint;
 
-pub fn run(cwd: PathBuf) -> Result<()> {
+pub fn run(cwd: &Path) -> Result<()> {
     let config_path = cwd.join("cari.json");
 
     if config_path.exists() {
@@ -12,7 +12,7 @@ pub fn run(cwd: PathBuf) -> Result<()> {
     std::fs::write(&config_path, DEFAULT_CONFIG)?;
 
     println!(" {} {}", "✔".green(), "Created cari.json".bold());
-    println!("   {}", "Edit it to configure your server".dim(),);
+    println!("   {}", "Edit it to configure your server".dim());
 
     Ok(())
 }

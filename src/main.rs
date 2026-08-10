@@ -41,6 +41,7 @@ enum Cli {
     Init,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn load_servers(filter: Option<Vec<String>>) -> Result<Vec<Server>> {
     let servers = std::fs::read_dir("./servers")?
         .map(|ent| load_server(ent?.path()))
@@ -68,7 +69,7 @@ async fn main() -> Result<()> {
 
     match cli {
         Cli::Init => {
-            commands::init::run(std::env::current_dir()?)?;
+            commands::init::run(&std::env::current_dir()?)?;
         }
         Cli::Open { server } => {
             commands::open::run(load_servers(server)?)?;
