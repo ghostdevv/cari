@@ -2,7 +2,7 @@
 
 use crate::config::{Server, load_server};
 use clap::Parser;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{self, Result};
 
 mod commands;
 mod config;
@@ -42,13 +42,19 @@ enum Cli {
 }
 
 fn load_servers(filter: Option<Vec<String>>) -> Result<Vec<Server>> {
-    Ok(std::fs::read_dir("./servers")?
+    let servers = std::fs::read_dir("./servers")?
         .map(|ent| load_server(ent?.path()))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()
         .filter(|s| filter.as_deref().is_none_or(|f| f.contains(&s.name)))
-        .collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    if servers.is_empty() {
+        eyre::bail!("no servers found :((")
+    }
+
+    Ok(servers)
 }
 
 #[tokio::main]
