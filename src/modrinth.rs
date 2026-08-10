@@ -72,7 +72,8 @@ pub struct Version {
     pub loaders: Vec<Loader>,
     pub date_published: chrono::DateTime<chrono::Utc>,
     pub status: VersionStatus,
-    pub r#type: VersionType,
+    #[allow(clippy::struct_field_names)]
+    pub version_type: VersionType,
     pub files: Vec<VersionFile>,
 }
 
@@ -111,7 +112,7 @@ pub async fn get_latest_project_version(
         .json::<Vec<Version>>()
         .await?
         .into_iter()
-        .max_by_key(|item| (item.r#type.priority(), item.date_published))
+        .max_by_key(|item| (item.version_type.priority(), item.date_published))
         .ok_or_else(|| {
             eyre!(
                 "no versions of {} found for game version {} using {} loader (check your cari.json)",
