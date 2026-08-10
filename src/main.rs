@@ -28,6 +28,12 @@ enum Cli {
         #[clap(long)]
         open: bool,
     },
+    Add {
+        #[clap(short, long)]
+        server: Option<String>,
+        #[clap(required = true)]
+        projects: Vec<String>,
+    },
     Install {
         #[clap(long)]
         dry_run: bool,
@@ -69,6 +75,9 @@ async fn main() -> Result<()> {
                     open,
                 } => {
                     commands::update::run(servers, server, dry_run, open).await?;
+                }
+                Cli::Add { server, projects } => {
+                    commands::add::run(servers, server, projects).await?;
                 }
                 Cli::Install { dry_run } => {
                     commands::install::run(servers, dry_run).await?;
