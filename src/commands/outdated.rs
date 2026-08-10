@@ -23,13 +23,8 @@ async fn run_item(server: &Server, item: &Content) -> Result<()> {
             latest_version.name
         )
     } else {
-        let current_version = modrinth::get_project_version(
-            &item.id,
-            &item.version,
-            &server.cfg.loader,
-            &server.cfg.game_version,
-        )
-        .await?;
+        let current_version =
+            modrinth::get_project_version(&item.id, &item.version, &server.cfg.loader).await?;
 
         println!(
             " {} {} {} -> {}",

@@ -76,6 +76,21 @@ pub struct Version {
     pub files: Vec<VersionFile>,
 }
 
+pub async fn get_project_versions(project: &str) -> Result<Vec<Version>> {
+    let versions = reqwest::ClientBuilder::new()
+        .user_agent(USER_AGENT)
+        .build()?
+        .get(format!("{}/project/{}/version", MODRINTH_BASE_URL, project))
+        .query(&[("include_changelog", "false")])
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<Vec<Version>>()
+        .await?;
+
+    Ok(versions)
+}
+
 pub async fn get_latest_project_version(
     project: &str,
     loader: &Loader,
@@ -97,18 +112,20 @@ pub async fn get_latest_project_version(
         .await?
         .into_iter()
         .max_by_key(|item| (item.version_type.priority(), item.date_published))
-        .ok_or_else(|| eyre!("no versions returned from api for {}", project))?;
+        .ok_or_else(|| {
+            eyre!(
+                "no versions of {} found for game version {} using {} loader (check your cari.json)",
+                project,
+                game_version,
+                loader
+            )
+        })?;
 
     Ok(version)
 }
 
-pub async fn get_project_version(
-    project: &str,
-    version: &str,
-    loader: &Loader,
-    game_version: &str,
-) -> Result<Version> {
-    let version = reqwest::ClientBuilder::new()
+pub async fn get_project_version(project: &str, version: &str, loader: &Loader) -> Result<Version> {
+    let version_data = reqwest::ClientBuilder::new()
         .user_agent(USER_AGENT)
         .build()?
         .get(format!(
@@ -121,11 +138,14 @@ pub async fn get_project_version(
         .json::<Version>()
         .await?;
 
-    if !version.loaders.contains(loader) {
-        eyre::bail!("version does not support loader");
-    } else if !version.game_versions.contains(&game_version.to_string()) {
-        eyre::bail!("version does not support game version");
+    if !version_data.loaders.contains(loader) {
+        eyre::bail!(
+            "{} ({}) does not support loader {}",
+            project,
+            version,
+            loader
+        );
     }
 
-    Ok(version)
+    Ok(version_data)
 }

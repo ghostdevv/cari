@@ -47,16 +47,18 @@ async fn run_item(
     content_dir: &Path,
     dry_run: bool,
 ) -> Result<Vec<Download>> {
-    let mut version = modrinth::get_project_version(
-        &item.id,
-        &item.version,
-        &server.cfg.loader,
-        &server.cfg.game_version,
-    )
-    .await?;
+    let mut version =
+        modrinth::get_project_version(&item.id, &item.version, &server.cfg.loader).await?;
 
     if version.files.len() != 1 {
         eyre::bail!("version does not have a single file {:#?}", item)
+    }
+
+    if !version.game_versions.contains(&server.cfg.game_version) {
+        println!(
+            "warn: {} ({}) does not support game version {}",
+            version.project_id, version.id, server.cfg.game_version
+        )
     }
 
     let file_data = version.files.remove(0);

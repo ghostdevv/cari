@@ -99,8 +99,18 @@ impl Downloader {
         }
         file.flush().await?;
 
-        if hex::encode(hasher.finalize()) != download.sha512 {
-            eyre::bail!("sha512 mismatch");
+        let digest = hex::encode(hasher.finalize());
+        if digest != download.sha512 {
+            eyre::bail!(
+                "sha512 mismatch for {} (expected {}, downloaded {})",
+                download
+                    .dest
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy(),
+                download.sha512,
+                digest
+            );
         }
 
         Ok(())
