@@ -63,19 +63,7 @@ fn apply_adds(server: &Server, adds: &[Add]) -> Result<()> {
     Ok(())
 }
 
-pub async fn run(
-    servers: Vec<Server>,
-    server: Option<String>,
-    projects: Vec<String>,
-) -> Result<()> {
-    let servers = match server {
-        Some(server) => servers
-            .into_iter()
-            .filter(|s| s.name == server)
-            .collect::<Vec<_>>(),
-        None => servers,
-    };
-
+pub async fn run(servers: Vec<Server>, projects: Vec<String>) -> Result<()> {
     for server in servers {
         println!(
             "   {}",

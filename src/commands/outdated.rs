@@ -38,15 +38,7 @@ async fn run_item(server: &Server, item: &Content) -> Result<()> {
     Ok(())
 }
 
-pub async fn run(servers: Vec<Server>, server: Option<String>) -> Result<()> {
-    let servers = match server {
-        Some(server) => servers
-            .into_iter()
-            .filter(|s| s.name == server)
-            .collect::<Vec<_>>(),
-        None => servers,
-    };
-
+pub async fn run(servers: Vec<Server>) -> Result<()> {
     let server_count = servers.len();
 
     for (index, server) in servers.into_iter().enumerate() {

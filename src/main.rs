@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::config::load_server;
+use crate::config::{Server, load_server};
 use clap::Parser;
 use color_eyre::eyre::Result;
 
@@ -14,15 +14,15 @@ mod modrinth;
 enum Cli {
     Open {
         #[clap(short, long)]
-        server: Option<String>,
+        server: Option<Vec<String>>,
     },
     Outdated {
         #[clap(short, long)]
-        server: Option<String>,
+        server: Option<Vec<String>>,
     },
     Update {
         #[clap(short, long)]
-        server: Option<String>,
+        server: Option<Vec<String>>,
         #[clap(long)]
         dry_run: bool,
         #[clap(long)]
@@ -30,7 +30,7 @@ enum Cli {
     },
     Add {
         #[clap(short, long)]
-        server: Option<String>,
+        server: Option<Vec<String>>,
         #[clap(required = true)]
         projects: Vec<String>,
     },
@@ -39,6 +39,16 @@ enum Cli {
         dry_run: bool,
     },
     Init,
+}
+
+fn load_servers(filter: Option<Vec<String>>) -> Result<Vec<Server>> {
+    Ok(std::fs::read_dir("./servers")?
+        .map(|ent| load_server(ent?.path()))
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .filter(|s| filter.as_deref().is_none_or(|f| f.contains(&s.name)))
+        .collect::<Vec<_>>())
 }
 
 #[tokio::main]
@@ -54,36 +64,24 @@ async fn main() -> Result<()> {
         Cli::Init => {
             commands::init::run(std::env::current_dir()?)?;
         }
-        _ => {
-            let servers = std::fs::read_dir("./servers")?
-                .map(|ent| load_server(ent?.path()))
-                .collect::<Result<Vec<_>, _>>()?
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>();
-
-            match cli {
-                Cli::Open { server } => {
-                    commands::open::run(servers, server)?;
-                }
-                Cli::Outdated { server } => {
-                    commands::outdated::run(servers, server).await?;
-                }
-                Cli::Update {
-                    server,
-                    dry_run,
-                    open,
-                } => {
-                    commands::update::run(servers, server, dry_run, open).await?;
-                }
-                Cli::Add { server, projects } => {
-                    commands::add::run(servers, server, projects).await?;
-                }
-                Cli::Install { dry_run } => {
-                    commands::install::run(servers, dry_run).await?;
-                }
-                Cli::Init => unreachable!(),
-            }
+        Cli::Open { server } => {
+            commands::open::run(load_servers(server)?)?;
+        }
+        Cli::Outdated { server } => {
+            commands::outdated::run(load_servers(server)?).await?;
+        }
+        Cli::Update {
+            server,
+            dry_run,
+            open,
+        } => {
+            commands::update::run(load_servers(server)?, dry_run, open).await?;
+        }
+        Cli::Add { server, projects } => {
+            commands::add::run(load_servers(server)?, projects).await?;
+        }
+        Cli::Install { dry_run } => {
+            commands::install::run(load_servers(None)?, dry_run).await?;
         }
     }
 
