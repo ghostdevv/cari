@@ -27,3 +27,11 @@ strum_macros = "0.28.0"
 tokio = { version = "1.53.1", features = ["full"] }
 trash = "5.2.6"
 yansi = "1.0.1"
+
+[profile.release]
+opt-level = 3
+debug = false
+strip = "symbols"
+lto = "fat"
+panic = "abort"
+codegen-units = 1
