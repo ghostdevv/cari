@@ -2,7 +2,7 @@ use color_eyre::eyre::{self, Result};
 use futures::stream::{self, StreamExt, TryStreamExt};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use sha2::{Digest, Sha512};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -13,6 +13,35 @@ pub const USER_AGENT: &str = concat!(
     env!("CARGO_PKG_VERSION"),
     " (+https://github.com/ghostdevv/cari)"
 );
+
+pub const MANAGED_SUFFIX: &str = "__cari";
+
+pub fn managed_filename(filename: &str) -> String {
+    match filename.rsplit_once('.') {
+        Some((stem, ext)) => format!("{stem}{MANAGED_SUFFIX}.{ext}"),
+        None => format!("{filename}{MANAGED_SUFFIX}"),
+    }
+}
+
+pub fn is_managed_filename(filename: &str) -> bool {
+    match filename.rsplit_once('.') {
+        Some((stem, _)) => stem.ends_with(MANAGED_SUFFIX),
+        None => filename.ends_with(MANAGED_SUFFIX),
+    }
+}
+
+pub fn unmanaged_path(path: &Path) -> Option<PathBuf> {
+    let name = path.file_name()?.to_string_lossy();
+
+    let base = match name.rsplit_once('.') {
+        Some((stem, ext)) => stem
+            .strip_suffix(MANAGED_SUFFIX)
+            .map(|stem| format!("{stem}.{ext}")),
+        None => name.strip_suffix(MANAGED_SUFFIX).map(str::to_string),
+    };
+
+    base.map(|name| path.with_file_name(name))
+}
 
 pub async fn sha512sum(path: &PathBuf) -> Result<String> {
     let mut file = tokio::fs::File::open(path).await?;

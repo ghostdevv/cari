@@ -1,11 +1,12 @@
 use crate::{
     config::{Content, Server},
-    fs::{Download, Downloader, sha512sum},
+    fs::{Download, Downloader, is_managed_filename, managed_filename, sha512sum, unmanaged_path},
     modrinth,
 };
 use color_eyre::eyre::{self, Result};
 use futures::stream::{self, StreamExt, TryStreamExt};
 use heck::ToTitleCase;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use yansi::Paint;
 
@@ -62,7 +63,7 @@ async fn run_item(
     }
 
     let file_data = version.files.remove(0);
-    let file_path = content_dir.join(&file_data.filename);
+    let file_path = content_dir.join(managed_filename(&file_data.filename));
 
     let mut downloads = Vec::new();
 
@@ -77,6 +78,69 @@ async fn run_item(
     Ok(downloads)
 }
 
+async fn clean_stale(content_dir: &Path, expected: &HashSet<PathBuf>, dry_run: bool) -> Result<()> {
+    if !content_dir.exists() {
+        return Ok(());
+    }
+
+    let mut removed = HashSet::new();
+
+    for dest in expected {
+        let Some(base) = unmanaged_path(dest) else {
+            continue;
+        };
+
+        if base.exists() && removed.insert(base.clone()) {
+            let name = base
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+
+            if dry_run {
+                println!(
+                    "   {} {}",
+                    "→".yellow(),
+                    format!("would remove {name}").dim()
+                );
+            } else {
+                trash::delete(&base)?;
+                println!(" {} {}", "-".yellow(), name.blue().dim());
+            }
+        }
+    }
+
+    let mut entries = tokio::fs::read_dir(content_dir).await?;
+    while let Some(entry) = entries.next_entry().await? {
+        if !entry.file_type().await?.is_file() {
+            continue;
+        }
+
+        let path = entry.path();
+        let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) else {
+            continue;
+        };
+
+        if !is_managed_filename(&name) || expected.contains(&path) {
+            continue;
+        }
+
+        if removed.insert(path.clone()) {
+            if dry_run {
+                println!(
+                    "   {} {}",
+                    "→".yellow(),
+                    format!("would remove {name}").dim()
+                );
+            } else {
+                trash::delete(&path)?;
+                println!(" {} {}", "-".yellow(), name.blue().dim());
+            }
+        }
+    }
+
+    Ok(())
+}
+
 pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
     if dry_run {
         println!(
@@ -87,6 +151,7 @@ pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
     }
 
     let mut downloader = Downloader::new();
+    let mut stale = Vec::new();
     let server_count = servers.len();
 
     for (index, server) in servers.into_iter().enumerate() {
@@ -130,6 +195,17 @@ pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
 
         downloader.add_from(&mut downloads);
 
+        let expected = downloads
+            .iter()
+            .map(|download| download.dest.clone())
+            .collect::<HashSet<_>>();
+
+        if dry_run {
+            clean_stale(&content_dir, &expected, dry_run).await?;
+        } else {
+            stale.push((content_dir, expected));
+        }
+
         if index != server_count - 1 {
             println!();
         }
@@ -153,6 +229,10 @@ pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
         }
     } else {
         downloader.download().await?;
+
+        for (content_dir, expected) in stale {
+            clean_stale(&content_dir, &expected, dry_run).await?;
+        }
     }
 
     Ok(())
