@@ -51,12 +51,6 @@ struct VersionQuery<'a> {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum VersionStatus {
-    Listed,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum VersionType {
     Release,
     Beta,
@@ -83,11 +77,11 @@ pub struct VersionFileHashes {
 
 #[derive(Debug, Deserialize)]
 pub struct VersionFile {
-    pub id: String,
+    // pub id: String,
     pub hashes: VersionFileHashes,
     pub url: String,
     pub filename: String,
-    pub primary: bool,
+    // pub primary: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -98,7 +92,6 @@ pub struct Version {
     pub game_versions: Vec<String>,
     pub loaders: Vec<Loader>,
     pub date_published: chrono::DateTime<chrono::Utc>,
-    pub status: VersionStatus,
     #[allow(clippy::struct_field_names)]
     pub version_type: VersionType,
     pub files: Vec<VersionFile>,
@@ -120,21 +113,6 @@ impl Version {
 
         Ok(self)
     }
-}
-
-pub async fn get_project_versions(project: &str) -> Result<Vec<Version>> {
-    let versions = reqwest::ClientBuilder::new()
-        .user_agent(USER_AGENT)
-        .build()?
-        .get(format!("{MODRINTH_BASE_URL}/project/{project}/version"))
-        .query(&[("include_changelog", "false")])
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<Vec<Version>>()
-        .await?;
-
-    Ok(versions)
 }
 
 pub async fn get_latest_project_version(

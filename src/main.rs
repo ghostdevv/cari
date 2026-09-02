@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::config::{Project, load_project};
 use clap::Parser;
 use color_eyre::eyre::{self, Result};
