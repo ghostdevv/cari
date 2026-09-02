@@ -100,7 +100,7 @@ pub struct VersionFile {
     pub hashes: VersionFileHashes,
     pub url: String,
     pub filename: String,
-    // pub primary: bool,
+    pub primary: bool,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq, strum_macros::Display)]

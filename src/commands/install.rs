@@ -3,7 +3,7 @@ use crate::{
     fs::{Download, Downloader, is_managed_filename, managed_filename, sha512sum, unmanaged_path},
     modrinth,
 };
-use color_eyre::eyre::{self, Result};
+use color_eyre::eyre::{OptionExt, Result};
 use futures::stream::{self, StreamExt, TryStreamExt};
 use heck::ToTitleCase;
 use std::collections::HashSet;
@@ -49,14 +49,10 @@ async fn run_item(
     content_dir: &Path,
     dry_run: bool,
 ) -> Result<(PathBuf, Option<Download>)> {
-    let mut version = modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader)
+    let version = modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader)
         .await?
         .assert_type(&modrinth::ProjectType::Mod)
         .await?;
-
-    if version.files.len() != 1 {
-        eyre::bail!("version does not have a single file {:#?}", item)
-    }
 
     if !version.game_versions.contains(&project.cfg.game_version) {
         println!(
@@ -65,7 +61,12 @@ async fn run_item(
         );
     }
 
-    let file_data = version.files.remove(0);
+    let file_data = version
+        .files
+        .into_iter()
+        .find(|f| f.primary)
+        .ok_or_eyre("failed to find file")?;
+
     let file_path = content_dir.join(managed_filename(&file_data.filename));
 
     let download =
