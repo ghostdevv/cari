@@ -3,8 +3,8 @@
   "title": "Config",
   "type": "object",
   "properties": {
-    "runtime": {
-      "$ref": "#/$defs/Runtime"
+    "server": {
+      "$ref": "#/$defs/Server"
     },
     "loader": {
       "$ref": "#/$defs/Loader"
@@ -20,13 +20,13 @@
     }
   },
   "required": [
-    "runtime",
+    "server",
     "loader",
     "gameVersion",
     "content"
   ],
   "$defs": {
-    "Runtime": {
+    "Server": {
       "oneOf": [
         {
           "type": "object",

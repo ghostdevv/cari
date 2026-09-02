@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: &str = r#"{
     "$schema": "https://raw.githubusercontent.com/ghostdevv/cari/refs/heads/main/cari.schema.json",
     "loader": "",
     "gameVersion": "",
-    "runtime": {},
+    "server": {},
     "content": []
 }
 "#;

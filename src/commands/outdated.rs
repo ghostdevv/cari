@@ -50,7 +50,7 @@ pub async fn run(projects: Vec<Project>) -> Result<()> {
         println!(
             " {} {} {}",
             "━".dim(),
-            project.cfg.runtime.to_string().to_title_case().blue().dim(),
+            project.cfg.server.to_string().to_title_case().blue().dim(),
             "(todo, can't compare versions)".dim()
         );
 

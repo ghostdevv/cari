@@ -166,13 +166,13 @@ pub async fn run(projects: Vec<Project>, dry_run: bool) -> Result<()> {
             project.name.to_title_case().blue().bold().underline(),
         );
 
-        let runtime_str = project.cfg.runtime.to_string();
-        let runtime_path = project.path.join(format!("{runtime_str}.jar"));
+        let server_str = project.cfg.server.to_string();
+        let server_path = project.path.join(format!("{server_str}.jar"));
 
         if should_download(
-            &runtime_str,
-            &runtime_path,
-            project.cfg.runtime.sha512(),
+            &server_str,
+            &server_path,
+            project.cfg.server.sha512(),
             dry_run,
         )
         .await?
@@ -180,10 +180,10 @@ pub async fn run(projects: Vec<Project>, dry_run: bool) -> Result<()> {
             downloader.add(
                 project
                     .cfg
-                    .runtime
+                    .server
                     .to_download_url(&project.cfg.game_version),
-                runtime_path,
-                project.cfg.runtime.sha512().to_owned(),
+                server_path,
+                project.cfg.server.sha512().to_owned(),
             );
         }
 

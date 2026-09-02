@@ -41,7 +41,7 @@ pub struct Content {
 #[derive(strum_macros::Display, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
-pub enum Runtime {
+pub enum Server {
     #[serde(rename_all = "camelCase")]
     Fabric {
         loader_version: String,
@@ -64,7 +64,7 @@ pub enum Runtime {
 
 const PAPERMC_BASE_URL: &str = "https://fill-data.papermc.io/v1/objects";
 
-impl Runtime {
+impl Server {
     pub fn to_download_url(&self, game_version: &str) -> String {
         match self {
             Self::Fabric {
@@ -98,12 +98,12 @@ impl Runtime {
     }
 }
 
-impl From<Runtime> for String {
-    fn from(val: Runtime) -> Self {
+impl From<Server> for String {
+    fn from(val: Server) -> Self {
         match val {
-            Runtime::Fabric { .. } => "fabric".into(),
-            Runtime::Velocity { .. } => "velocity".into(),
-            Runtime::Paper { .. } => "paper".into(),
+            Server::Fabric { .. } => "fabric".into(),
+            Server::Velocity { .. } => "velocity".into(),
+            Server::Paper { .. } => "paper".into(),
         }
     }
 }
@@ -112,7 +112,7 @@ impl From<Runtime> for String {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    pub runtime: Runtime,
+    pub server: Server,
     pub loader: Loader,
     pub game_version: String,
     pub content: Vec<Content>,
