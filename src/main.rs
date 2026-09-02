@@ -10,14 +10,17 @@ mod modrinth;
 #[derive(clap::Parser)]
 #[clap(name = "cari", about, version)]
 enum Cli {
+    #[clap(about = "Open all content on modrinth")]
     Open {
         #[clap(short, long)]
         project: Option<Vec<String>>,
     },
+    #[clap(about = "List outdated content")]
     Outdated {
         #[clap(short, long)]
         project: Option<Vec<String>>,
     },
+    #[clap(about = "Update content to latest version(s)")]
     Update {
         #[clap(short, long)]
         project: Option<Vec<String>>,
@@ -26,17 +29,21 @@ enum Cli {
         #[clap(long)]
         open: bool,
     },
+    #[clap(about = "Add new content to your config")]
     Add {
         #[clap(short, long)]
         project: Option<Vec<String>>,
         #[clap(required = true)]
         items: Vec<String>,
     },
+    #[clap(about = "Install all content")]
     Install {
         #[clap(long)]
         dry_run: bool,
     },
+    #[clap(about = "Initialize a new cari project")]
     Init,
+    #[clap(about = "Import content from a modpack")]
     Import {
         #[clap(short, long)]
         project: Option<Vec<String>>,
