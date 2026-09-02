@@ -1,5 +1,5 @@
 use crate::{
-    config::{Content, Server},
+    config::{Content, Project},
     fs::{Download, Downloader, is_managed_filename, managed_filename, sha512sum, unmanaged_path},
     modrinth,
 };
@@ -44,22 +44,22 @@ async fn should_download(
 }
 
 async fn run_item(
-    server: &Server,
+    project: &Project,
     item: &Content,
     content_dir: &Path,
     dry_run: bool,
 ) -> Result<(PathBuf, Option<Download>)> {
     let mut version =
-        modrinth::get_project_version(&item.id, &item.version, &server.cfg.loader).await?;
+        modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader).await?;
 
     if version.files.len() != 1 {
         eyre::bail!("version does not have a single file {:#?}", item)
     }
 
-    if !version.game_versions.contains(&server.cfg.game_version) {
+    if !version.game_versions.contains(&project.cfg.game_version) {
         println!(
             "warn: {} ({}) does not support game version {}",
-            version.project_id, version.id, server.cfg.game_version
+            version.project_id, version.id, project.cfg.game_version
         );
     }
 
@@ -147,7 +147,7 @@ async fn clean_stale(content_dir: &Path, expected: &HashSet<PathBuf>, dry_run: b
     Ok(())
 }
 
-pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
+pub async fn run(projects: Vec<Project>, dry_run: bool) -> Result<()> {
     if dry_run {
         println!(
             "   {}",
@@ -158,40 +158,43 @@ pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
 
     let mut downloader = Downloader::new();
     let mut stale = Vec::new();
-    let server_count = servers.len();
+    let project_count = projects.len();
 
-    for (index, server) in servers.into_iter().enumerate() {
+    for (index, project) in projects.into_iter().enumerate() {
         println!(
             "   {}",
-            server.name.to_title_case().blue().bold().underline(),
+            project.name.to_title_case().blue().bold().underline(),
         );
 
-        let runtime_str = server.cfg.runtime.to_string();
-        let runtime_path = server.path.join(format!("{runtime_str}.jar"));
+        let runtime_str = project.cfg.runtime.to_string();
+        let runtime_path = project.path.join(format!("{runtime_str}.jar"));
 
         if should_download(
             &runtime_str,
             &runtime_path,
-            server.cfg.runtime.sha512(),
+            project.cfg.runtime.sha512(),
             dry_run,
         )
         .await?
         {
             downloader.add(
-                server.cfg.runtime.to_download_url(&server.cfg.game_version),
+                project
+                    .cfg
+                    .runtime
+                    .to_download_url(&project.cfg.game_version),
                 runtime_path,
-                server.cfg.runtime.sha512().to_owned(),
+                project.cfg.runtime.sha512().to_owned(),
             );
         }
 
-        let content_dir = server.content_dir();
+        let content_dir = project.content_dir();
 
         if !content_dir.exists() && !dry_run {
             std::fs::create_dir_all(&content_dir)?;
         }
 
-        let items = stream::iter(&server.cfg.content)
-            .map(|item| run_item(&server, item, &content_dir, dry_run))
+        let items = stream::iter(&project.cfg.content)
+            .map(|item| run_item(&project, item, &content_dir, dry_run))
             .buffer_unordered(8)
             .try_collect::<Vec<_>>()
             .await?;
@@ -214,7 +217,7 @@ pub async fn run(servers: Vec<Server>, dry_run: bool) -> Result<()> {
             stale.push((content_dir, expected));
         }
 
-        if index != server_count - 1 {
+        if index != project_count - 1 {
             println!();
         }
     }

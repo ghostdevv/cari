@@ -1,5 +1,5 @@
 use crate::{
-    config::{Content, Server},
+    config::{Content, Project},
     modrinth,
 };
 use color_eyre::eyre::{OptionExt, Result};
@@ -12,11 +12,11 @@ struct Update {
     version: String,
 }
 
-async fn run_item(server: &Server, item: &Content) -> Result<Option<Update>> {
+async fn run_item(project: &Project, item: &Content) -> Result<Option<Update>> {
     let latest_version = modrinth::get_latest_project_version(
         &item.id,
-        &server.cfg.loader,
-        &server.cfg.game_version,
+        &project.cfg.loader,
+        &project.cfg.game_version,
     )
     .await?;
 
@@ -31,7 +31,7 @@ async fn run_item(server: &Server, item: &Content) -> Result<Option<Update>> {
         Ok(None)
     } else {
         let current_version =
-            modrinth::get_project_version(&item.id, &item.version, &server.cfg.loader).await?;
+            modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader).await?;
 
         println!(
             " {} {} {} -> {}",
@@ -48,8 +48,8 @@ async fn run_item(server: &Server, item: &Content) -> Result<Option<Update>> {
     }
 }
 
-fn apply_updates(server: &Server, updates: &[Update]) -> Result<()> {
-    let path = server.path.join("cari.json");
+fn apply_updates(project: &Project, updates: &[Update]) -> Result<()> {
+    let path = project.path.join("cari.json");
     let raw = std::fs::read_to_string(&path)?;
     let mut value: serde_json::Value = serde_json::from_str(&raw)?;
 
@@ -76,17 +76,17 @@ fn apply_updates(server: &Server, updates: &[Update]) -> Result<()> {
     Ok(())
 }
 
-pub async fn run(servers: Vec<Server>, dry_run: bool, open_versions: bool) -> Result<()> {
-    let server_count = servers.len();
+pub async fn run(projects: Vec<Project>, dry_run: bool, open_versions: bool) -> Result<()> {
+    let project_count = projects.len();
 
-    for (index, server) in servers.into_iter().enumerate() {
+    for (index, project) in projects.into_iter().enumerate() {
         println!(
             "   {}",
-            server.name.to_title_case().blue().bold().underline(),
+            project.name.to_title_case().blue().bold().underline(),
         );
 
-        let updates = stream::iter(&server.cfg.content)
-            .map(|item| run_item(&server, item))
+        let updates = stream::iter(&project.cfg.content)
+            .map(|item| run_item(&project, item))
             .buffer_unordered(8)
             .try_collect::<Vec<_>>()
             .await?
@@ -98,20 +98,20 @@ pub async fn run(servers: Vec<Server>, dry_run: bool, open_versions: bool) -> Re
             if dry_run {
                 println!("   {} {}", "→".yellow(), "would update cari.json".dim());
             } else {
-                apply_updates(&server, &updates)?;
+                apply_updates(&project, &updates)?;
             }
 
             if open_versions {
                 for update in &updates {
                     open::that(format!(
                         "https://modrinth.com/mod/{}/changelog?g={}&l={}",
-                        update.id, server.cfg.game_version, server.cfg.loader
+                        update.id, project.cfg.game_version, project.cfg.loader
                     ))?;
                 }
             }
         }
 
-        if index != server_count - 1 {
+        if index != project_count - 1 {
             println!();
         }
     }

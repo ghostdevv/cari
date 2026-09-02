@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::config::{Server, load_server};
+use crate::config::{Project, load_project};
 use clap::Parser;
 use color_eyre::eyre::{self, Result};
 
@@ -14,15 +14,15 @@ mod modrinth;
 enum Cli {
     Open {
         #[clap(short, long)]
-        server: Option<Vec<String>>,
+        project: Option<Vec<String>>,
     },
     Outdated {
         #[clap(short, long)]
-        server: Option<Vec<String>>,
+        project: Option<Vec<String>>,
     },
     Update {
         #[clap(short, long)]
-        server: Option<Vec<String>>,
+        project: Option<Vec<String>>,
         #[clap(long)]
         dry_run: bool,
         #[clap(long)]
@@ -30,9 +30,9 @@ enum Cli {
     },
     Add {
         #[clap(short, long)]
-        server: Option<Vec<String>>,
+        project: Option<Vec<String>>,
         #[clap(required = true)]
-        projects: Vec<String>,
+        items: Vec<String>,
     },
     Install {
         #[clap(long)]
@@ -42,20 +42,20 @@ enum Cli {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn load_servers(filter: Option<Vec<String>>) -> Result<Vec<Server>> {
-    let servers = std::fs::read_dir("./servers")?
-        .map(|ent| load_server(ent?.path()))
+fn load_projects(filter: Option<Vec<String>>) -> Result<Vec<Project>> {
+    let projects = std::fs::read_dir("./servers")?
+        .map(|ent| load_project(ent?.path()))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()
         .filter(|s| filter.as_deref().is_none_or(|f| f.contains(&s.name)))
         .collect::<Vec<_>>();
 
-    if servers.is_empty() {
-        eyre::bail!("no servers found :((")
+    if projects.is_empty() {
+        eyre::bail!("no projects found :((")
     }
 
-    Ok(servers)
+    Ok(projects)
 }
 
 #[tokio::main]
@@ -71,24 +71,24 @@ async fn main() -> Result<()> {
         Cli::Init => {
             commands::init::run(&std::env::current_dir()?)?;
         }
-        Cli::Open { server } => {
-            commands::open::run(load_servers(server)?)?;
+        Cli::Open { project } => {
+            commands::open::run(load_projects(project)?)?;
         }
-        Cli::Outdated { server } => {
-            commands::outdated::run(load_servers(server)?).await?;
+        Cli::Outdated { project } => {
+            commands::outdated::run(load_projects(project)?).await?;
         }
         Cli::Update {
-            server,
+            project,
             dry_run,
             open,
         } => {
-            commands::update::run(load_servers(server)?, dry_run, open).await?;
+            commands::update::run(load_projects(project)?, dry_run, open).await?;
         }
-        Cli::Add { server, projects } => {
-            commands::add::run(load_servers(server)?, projects).await?;
+        Cli::Add { project, items } => {
+            commands::add::run(load_projects(project)?, items).await?;
         }
         Cli::Install { dry_run } => {
-            commands::install::run(load_servers(None)?, dry_run).await?;
+            commands::install::run(load_projects(None)?, dry_run).await?;
         }
     }
 

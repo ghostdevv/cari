@@ -1,4 +1,4 @@
-use crate::{config::Server, modrinth};
+use crate::{config::Project, modrinth};
 use color_eyre::eyre::{OptionExt, Result};
 use futures::stream::{self, StreamExt, TryStreamExt};
 use heck::ToTitleCase;
@@ -9,8 +9,8 @@ struct Add {
     version: String,
 }
 
-async fn run_item(server: &Server, id: &str) -> Result<Option<Add>> {
-    let cfg = &server.cfg;
+async fn run_item(project: &Project, id: &str) -> Result<Option<Add>> {
+    let cfg = &project.cfg;
 
     if cfg.content.iter().any(|item| item.id == id) {
         println!(
@@ -38,8 +38,8 @@ async fn run_item(server: &Server, id: &str) -> Result<Option<Add>> {
     }))
 }
 
-fn apply_adds(server: &Server, adds: &[Add]) -> Result<()> {
-    let path = server.path.join("cari.json");
+fn apply_adds(project: &Project, adds: &[Add]) -> Result<()> {
+    let path = project.path.join("cari.json");
     let raw = std::fs::read_to_string(&path)?;
     let mut value: serde_json::Value = serde_json::from_str(&raw)?;
 
@@ -63,15 +63,15 @@ fn apply_adds(server: &Server, adds: &[Add]) -> Result<()> {
     Ok(())
 }
 
-pub async fn run(servers: Vec<Server>, projects: Vec<String>) -> Result<()> {
-    for server in servers {
+pub async fn run(projects: Vec<Project>, items: Vec<String>) -> Result<()> {
+    for project in projects {
         println!(
             "   {}",
-            server.name.to_title_case().blue().bold().underline(),
+            project.name.to_title_case().blue().bold().underline(),
         );
 
-        let adds = stream::iter(&projects)
-            .map(|project| run_item(&server, project))
+        let adds = stream::iter(&items)
+            .map(|item| run_item(&project, item))
             .buffer_unordered(8)
             .try_collect::<Vec<_>>()
             .await?
@@ -80,7 +80,7 @@ pub async fn run(servers: Vec<Server>, projects: Vec<String>) -> Result<()> {
             .collect::<Vec<_>>();
 
         if !adds.is_empty() {
-            apply_adds(&server, &adds)?;
+            apply_adds(&project, &adds)?;
         }
     }
 

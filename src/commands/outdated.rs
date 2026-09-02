@@ -1,5 +1,5 @@
 use crate::{
-    config::{Content, Server},
+    config::{Content, Project},
     modrinth,
 };
 use color_eyre::eyre::Result;
@@ -7,11 +7,11 @@ use futures::stream::{self, StreamExt, TryStreamExt};
 use heck::ToTitleCase;
 use yansi::Paint;
 
-async fn run_item(server: &Server, item: &Content) -> Result<()> {
+async fn run_item(project: &Project, item: &Content) -> Result<()> {
     let latest_version = modrinth::get_latest_project_version(
         &item.id,
-        &server.cfg.loader,
-        &server.cfg.game_version,
+        &project.cfg.loader,
+        &project.cfg.game_version,
     )
     .await?;
 
@@ -24,7 +24,7 @@ async fn run_item(server: &Server, item: &Content) -> Result<()> {
         );
     } else {
         let current_version =
-            modrinth::get_project_version(&item.id, &item.version, &server.cfg.loader).await?;
+            modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader).await?;
 
         println!(
             " {} {} {} -> {}",
@@ -38,29 +38,29 @@ async fn run_item(server: &Server, item: &Content) -> Result<()> {
     Ok(())
 }
 
-pub async fn run(servers: Vec<Server>) -> Result<()> {
-    let server_count = servers.len();
+pub async fn run(projects: Vec<Project>) -> Result<()> {
+    let project_count = projects.len();
 
-    for (index, server) in servers.into_iter().enumerate() {
+    for (index, project) in projects.into_iter().enumerate() {
         println!(
             "   {}",
-            server.name.to_title_case().blue().bold().underline(),
+            project.name.to_title_case().blue().bold().underline(),
         );
 
         println!(
             " {} {} {}",
             "━".dim(),
-            server.cfg.runtime.to_string().to_title_case().blue().dim(),
+            project.cfg.runtime.to_string().to_title_case().blue().dim(),
             "(todo, can't compare versions)".dim()
         );
 
-        stream::iter(&server.cfg.content)
-            .map(|item| run_item(&server, item))
+        stream::iter(&project.cfg.content)
+            .map(|item| run_item(&project, item))
             .buffer_unordered(8)
             .try_collect::<Vec<_>>()
             .await?;
 
-        if index != server_count - 1 {
+        if index != project_count - 1 {
             println!();
         }
     }

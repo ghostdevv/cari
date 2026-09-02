@@ -119,13 +119,13 @@ pub struct Config {
 }
 
 #[derive(Debug)]
-pub struct Server {
+pub struct Project {
     pub name: String,
     pub path: PathBuf,
     pub cfg: Config,
 }
 
-impl Server {
+impl Project {
     pub fn content_dir(&self) -> PathBuf {
         match self.cfg.loader {
             Loader::Fabric | Loader::Quilt | Loader::Neoforge => self.path.join("./mods"),
@@ -149,15 +149,15 @@ fn load_config(path: &PathBuf) -> Result<Option<Config>> {
     }
 }
 
-pub fn load_server(path: PathBuf) -> Result<Option<Server>> {
+pub fn load_project(path: PathBuf) -> Result<Option<Project>> {
     let cfg = load_config(&path.join("./cari.json"))?;
     let name = path
         .file_name()
-        .ok_or_eyre("failed to find server name")?
+        .ok_or_eyre("failed to find project name")?
         .to_string_lossy()
         .to_string();
 
-    Ok(cfg.map(|cfg| Server { name, path, cfg }))
+    Ok(cfg.map(|cfg| Project { name, path, cfg }))
 }
 
 #[cfg(debug_assertions)]

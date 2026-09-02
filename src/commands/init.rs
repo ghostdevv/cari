@@ -12,7 +12,7 @@ pub fn run(cwd: &Path) -> Result<()> {
     std::fs::write(&config_path, DEFAULT_CONFIG)?;
 
     println!(" {} {}", "✔".green(), "Created cari.json".bold());
-    println!("   {}", "Edit it to configure your server".dim());
+    println!("   {}", "Edit it to configure your project".dim());
 
     Ok(())
 }
