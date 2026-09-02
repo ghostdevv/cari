@@ -4,7 +4,14 @@
   "type": "object",
   "properties": {
     "server": {
-      "$ref": "#/$defs/Server"
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Server"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "loader": {
       "$ref": "#/$defs/Loader"
@@ -20,7 +27,6 @@
     }
   },
   "required": [
-    "server",
     "loader",
     "gameVersion",
     "content"

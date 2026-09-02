@@ -47,12 +47,14 @@ pub async fn run(projects: Vec<Project>) -> Result<()> {
             project.name.to_title_case().blue().bold().underline(),
         );
 
-        println!(
-            " {} {} {}",
-            "━".dim(),
-            project.cfg.server.to_string().to_title_case().blue().dim(),
-            "(todo, can't compare versions)".dim()
-        );
+        if let Some(server) = &project.cfg.server {
+            println!(
+                " {} {} {}",
+                "━".dim(),
+                server.to_string().to_title_case().blue().dim(),
+                "(todo, can't compare versions)".dim()
+            );
+        }
 
         stream::iter(&project.cfg.content)
             .map(|item| run_item(&project, item))

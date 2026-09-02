@@ -112,7 +112,7 @@ impl From<Server> for String {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    pub server: Server,
+    pub server: Option<Server>,
     pub loader: Loader,
     pub game_version: String,
     pub content: Vec<Content>,

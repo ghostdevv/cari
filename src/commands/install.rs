@@ -166,25 +166,17 @@ pub async fn run(projects: Vec<Project>, dry_run: bool) -> Result<()> {
             project.name.to_title_case().blue().bold().underline(),
         );
 
-        let server_str = project.cfg.server.to_string();
-        let server_path = project.path.join(format!("{server_str}.jar"));
+        if let Some(server) = &project.cfg.server {
+            let server_str = server.to_string();
+            let server_path = project.path.join(format!("{server_str}.jar"));
 
-        if should_download(
-            &server_str,
-            &server_path,
-            project.cfg.server.sha512(),
-            dry_run,
-        )
-        .await?
-        {
-            downloader.add(
-                project
-                    .cfg
-                    .server
-                    .to_download_url(&project.cfg.game_version),
-                server_path,
-                project.cfg.server.sha512().to_owned(),
-            );
+            if should_download(&server_str, &server_path, server.sha512(), dry_run).await? {
+                downloader.add(
+                    server.to_download_url(&project.cfg.game_version),
+                    server_path,
+                    server.sha512().to_owned(),
+                );
+            }
         }
 
         let content_dir = project.content_dir();
