@@ -25,10 +25,29 @@ pub enum ProjectType {
 
 #[derive(Debug, Deserialize)]
 pub struct Project {
+    pub id: String,
+    pub title: String,
+    #[allow(clippy::struct_field_names)]
     pub project_type: ProjectType,
+    pub slug: Option<String>,
 }
 
-async fn get_project(project_id: &str) -> Result<Project> {
+impl Project {
+    pub fn assert_type(self, project_type: &ProjectType) -> Result<Self> {
+        if self.project_type != *project_type {
+            eyre::bail!(
+                "{} is not a {} (found a {})",
+                self.id,
+                project_type,
+                self.project_type
+            );
+        }
+
+        Ok(self)
+    }
+}
+
+pub async fn get_project(project_id: &str) -> Result<Project> {
     Ok(reqwest::ClientBuilder::new()
         .user_agent(USER_AGENT)
         .build()?
@@ -84,6 +103,25 @@ pub struct VersionFile {
     // pub primary: bool,
 }
 
+#[derive(Debug, Deserialize, PartialEq, Eq, strum_macros::Display)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum DependencyType {
+    Required,
+    Optional,
+    Incompatible,
+    Embedded,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Dependency {
+    pub project_id: Option<String>,
+    pub version_id: Option<String>,
+    pub file_name: Option<String>,
+    #[allow(clippy::struct_field_names)]
+    pub dependency_type: Option<DependencyType>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Version {
     pub id: String,
@@ -95,23 +133,15 @@ pub struct Version {
     #[allow(clippy::struct_field_names)]
     pub version_type: VersionType,
     pub files: Vec<VersionFile>,
+    pub dependencies: Vec<Dependency>,
 }
 
 impl Version {
     pub async fn assert_type(self, project_type: &ProjectType) -> Result<Self> {
-        let project = get_project(&self.project_id).await?;
-
-        if project.project_type != *project_type {
-            eyre::bail!(
-                "{} ({}) is not a {} (found a {})",
-                self.project_id,
-                self.id,
-                project_type,
-                project.project_type
-            );
-        }
-
-        Ok(self)
+        get_project(&self.project_id)
+            .await?
+            .assert_type(project_type)
+            .map(|_| self)
     }
 }
 

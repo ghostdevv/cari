@@ -4,9 +4,9 @@ use futures::stream::{self, StreamExt, TryStreamExt};
 use heck::ToTitleCase;
 use yansi::Paint;
 
-struct Add {
-    id: String,
-    version: String,
+pub struct Add {
+    pub id: String,
+    pub version: String,
 }
 
 async fn run_item(project: &Project, id: &str) -> Result<Option<Add>> {
@@ -40,7 +40,7 @@ async fn run_item(project: &Project, id: &str) -> Result<Option<Add>> {
     }))
 }
 
-fn apply_adds(project: &Project, adds: &[Add]) -> Result<()> {
+pub fn apply_adds(project: &Project, adds: &[Add]) -> Result<()> {
     let path = project.path.join("cari.json");
     let raw = std::fs::read_to_string(&path)?;
     let mut value: serde_json::Value = serde_json::from_str(&raw)?;

@@ -37,6 +37,12 @@ enum Cli {
         dry_run: bool,
     },
     Init,
+    Import {
+        #[clap(short, long)]
+        project: Option<Vec<String>>,
+        #[clap(required = true)]
+        item: String,
+    },
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -87,6 +93,9 @@ async fn main() -> Result<()> {
         }
         Cli::Install { dry_run } => {
             commands::install::run(load_projects(None)?, dry_run).await?;
+        }
+        Cli::Import { project, item } => {
+            commands::import::run(load_projects(project)?, item).await?;
         }
     }
 
