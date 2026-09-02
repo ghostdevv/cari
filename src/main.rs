@@ -1,6 +1,8 @@
 use crate::config::{Project, load_project};
 use clap::Parser;
 use color_eyre::eyre::{self, Result};
+use ignore::Walk;
+use std::fs::canonicalize;
 
 mod commands;
 mod config;
@@ -54,8 +56,13 @@ enum Cli {
 
 #[allow(clippy::needless_pass_by_value)]
 fn load_projects(filter: Option<Vec<String>>) -> Result<Vec<Project>> {
-    let projects = std::fs::read_dir("./servers")?
-        .map(|ent| load_project(ent?.path()))
+    let projects = Walk::new("./")
+        .filter(|entry| match entry {
+            Ok(entry) => entry.file_name() == "cari.json",
+            // so that errors are handled later, rather than dropped
+            Err(_) => true,
+        })
+        .map(|entry| load_project(canonicalize(entry?.path())?))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()

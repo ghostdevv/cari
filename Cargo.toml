@@ -15,6 +15,7 @@ futures = "0.3.33"
 futures-util = "0.3.33"
 heck = "0.5.0"
 hex = "0.4.3"
+ignore = "0.4.33"
 indicatif = "0.18.6"
 open = "5.4.1"
 reqwest = { version = "0.13.4", features = ["json", "query", "stream"] }

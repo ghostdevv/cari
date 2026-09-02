@@ -150,7 +150,13 @@ fn load_config(path: &PathBuf) -> Result<Option<Config>> {
 }
 
 pub fn load_project(path: PathBuf) -> Result<Option<Project>> {
-    let cfg = load_config(&path.join("./cari.json"))?;
+    let cfg = load_config(&path)?;
+
+    let path = path
+        .parent()
+        .ok_or_eyre("no project parent dir found")?
+        .to_path_buf();
+
     let name = path
         .file_name()
         .ok_or_eyre("failed to find project name")?
