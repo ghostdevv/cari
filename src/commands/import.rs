@@ -2,7 +2,7 @@ use crate::{
     config::{self, Project},
     modrinth,
 };
-use color_eyre::eyre::{Result, bail};
+use color_eyre::eyre::{OptionExt, Result, bail};
 use yansi::Paint;
 
 async fn run_project(project: &mut Project, item: &str) -> Result<()> {
@@ -24,7 +24,7 @@ async fn run_project(project: &mut Project, item: &str) -> Result<()> {
         project.name.blue()
     );
 
-    for data in version.dependencies.into_iter() {
+    for data in version.dependencies {
         if data.dependency_type == Some(modrinth::DependencyType::Incompatible) {
             bail!("unclear how to handle \"incompatible\" dependency type");
         }
@@ -38,9 +38,9 @@ async fn run_project(project: &mut Project, item: &str) -> Result<()> {
             continue;
         }
 
-        // SAFETY: the api should return these when file_name is None
-        let project_id = data.project_id.unwrap();
-        let version_id = data.version_id.unwrap();
+        // the err shouldn't happen as when the `file_name` is None, these are set
+        let project_id = data.project_id.ok_or_eyre("somehow missing id")?;
+        let version_id = data.version_id.ok_or_eyre("somehow missing id")?;
 
         let m_project = modrinth::get_project(&project_id).await?;
         let project_id = m_project.slug.as_deref().unwrap_or(&project_id);
@@ -56,7 +56,7 @@ async fn run_project(project: &mut Project, item: &str) -> Result<()> {
         }
 
         let version =
-            modrinth::get_project_version(&project_id, &version_id, &project.cfg.loader).await?;
+            modrinth::get_project_version(project_id, &version_id, &project.cfg.loader).await?;
 
         // todo this fails if not using slug id
         if project.cfg.content.iter().any(|item| item.id == project_id) {

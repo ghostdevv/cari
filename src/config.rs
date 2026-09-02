@@ -146,9 +146,7 @@ impl Project {
         )?;
         Ok(())
     }
-}
 
-impl Project {
     pub fn content_dir(&self) -> PathBuf {
         match self.cfg.loader {
             Loader::Fabric | Loader::Quilt | Loader::Neoforge => self.path.join("./mods"),
@@ -172,8 +170,8 @@ fn load_config(path: &PathBuf) -> Result<Option<Config>> {
     }
 }
 
-pub fn load_project(path: PathBuf) -> Result<Option<Project>> {
-    let cfg = load_config(&path)?;
+pub fn load_project(path: &PathBuf) -> Result<Option<Project>> {
+    let cfg = load_config(path)?;
 
     let path = path
         .parent()

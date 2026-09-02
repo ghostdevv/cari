@@ -56,13 +56,14 @@ enum Cli {
 
 #[allow(clippy::needless_pass_by_value)]
 fn load_projects(filter: Option<Vec<String>>) -> Result<Vec<Project>> {
+    #[allow(clippy::option_if_let_else)]
     let projects = Walk::new("./")
         .filter(|entry| match entry {
             Ok(entry) => entry.file_name() == "cari.json",
             // so that errors are handled later, rather than dropped
             Err(_) => true,
         })
-        .map(|entry| load_project(canonicalize(entry?.path())?))
+        .map(|entry| load_project(&canonicalize(entry?.path())?))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()
