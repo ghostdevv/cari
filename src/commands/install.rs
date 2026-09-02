@@ -56,8 +56,13 @@ async fn run_item(
 
     if !version.game_versions.contains(&project.cfg.game_version) {
         println!(
-            "warn: {} ({}) does not support game version {}",
-            version.project_id, version.id, project.cfg.game_version
+            " {} {} {} {} {} {}",
+            "?".yellow(),
+            item.id.yellow(),
+            format!("({})", version.id).yellow().dim().bold(),
+            "does not support game version".yellow(),
+            project.cfg.game_version.yellow().bold(),
+            "- installing anyway".yellow()
         );
     }
 
