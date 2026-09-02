@@ -1,12 +1,11 @@
 use crate::{
-    commands::add::{Add, apply_adds},
-    config::Project,
+    config::{self, Project},
     modrinth,
 };
 use color_eyre::eyre::{Result, bail};
 use yansi::Paint;
 
-async fn run_project(project: &Project, item: &str) -> Result<()> {
+async fn run_project(project: &mut Project, item: &str) -> Result<()> {
     let item = modrinth::get_project(item)
         .await?
         .assert_type(&modrinth::ProjectType::Modpack)?;
@@ -24,8 +23,6 @@ async fn run_project(project: &Project, item: &str) -> Result<()> {
         format!("({})", version.id).dim(),
         project.name.blue()
     );
-
-    let mut adds: Vec<Add> = vec![];
 
     for data in version.dependencies.into_iter() {
         if data.dependency_type == Some(modrinth::DependencyType::Incompatible) {
@@ -79,20 +76,19 @@ async fn run_project(project: &Project, item: &str) -> Result<()> {
             version.name.green()
         );
 
-        adds.push(Add {
-            id: project_id.to_string(),
-            version: version_id,
-        });
+        project
+            .cfg
+            .content
+            .push(config::Content::new(project_id.to_string(), version_id));
     }
 
-    apply_adds(project, &adds)?;
-
+    project.save()?;
     Ok(())
 }
 
 pub async fn run(projects: Vec<Project>, item: String) -> Result<()> {
-    for project in projects {
-        run_project(&project, &item).await?;
+    for mut project in projects {
+        run_project(&mut project, &item).await?;
     }
 
     Ok(())

@@ -24,21 +24,27 @@ pub enum Loader {
     Waterfall,
 }
 
-const fn default_false() -> bool {
-    false
-}
-
 #[cfg_attr(debug_assertions, derive(JsonSchema))]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Content {
     pub id: String,
     pub version: String,
-    #[serde(default = "default_false")]
-    external: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    external: Option<bool>,
+}
+
+impl Content {
+    pub const fn new(id: String, version: String) -> Self {
+        Self {
+            id,
+            version,
+            external: None,
+        }
+    }
 }
 
 #[cfg_attr(debug_assertions, derive(JsonSchema))]
-#[derive(strum_macros::Display, Debug, Deserialize)]
+#[derive(strum_macros::Display, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum Server {
@@ -108,10 +114,17 @@ impl From<Server> for String {
     }
 }
 
+fn default_config_schema_url() -> String {
+    "https://raw.githubusercontent.com/ghostdevv/cari/refs/heads/main/cari.schema.json".into()
+}
+
 #[cfg_attr(debug_assertions, derive(JsonSchema))]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+    #[serde(rename = "$schema", default = "default_config_schema_url")]
+    schema: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<Server>,
     pub loader: Loader,
     pub game_version: String,
@@ -123,6 +136,16 @@ pub struct Project {
     pub name: String,
     pub path: PathBuf,
     pub cfg: Config,
+}
+
+impl Project {
+    pub fn save(&self) -> Result<()> {
+        std::fs::write(
+            self.path.join("cari.json"),
+            format!("{}\n", serde_json::to_string_pretty(&self.cfg)?),
+        )?;
+        Ok(())
+    }
 }
 
 impl Project {
@@ -139,7 +162,7 @@ fn load_config(path: &PathBuf) -> Result<Option<Config>> {
         Ok(file) => {
             let reader = std::io::BufReader::new(file);
             let mut cfg: Config = serde_json::from_reader(reader)?;
-            cfg.content.retain(|c| !c.external);
+            cfg.content.retain(|c| !c.external.is_some_and(|b| b));
             Ok(Some(cfg))
         }
         Err(e) => match e.kind() {
