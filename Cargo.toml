@@ -19,7 +19,7 @@ ignore = "0.4.33"
 indicatif = "0.18.6"
 open = "5.4.3"
 reqwest = { version = "0.13.4", features = ["json", "query", "stream"] }
-schemars = "1.2.2"
+schemars = { version = "1.2.2", optional = true }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.151", features = ["preserve_order"] }
 sha2 = "0.11.0"
@@ -28,6 +28,9 @@ strum_macros = "0.28.0"
 tokio = { version = "1.53.1", features = ["full"] }
 trash = "5.2.6"
 yansi = "1.0.1"
+
+[features]
+schema = ["dep:schemars"]
 
 [profile.release]
 opt-level = 3

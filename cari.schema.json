@@ -3,6 +3,10 @@
   "title": "Config",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string",
+      "default": "https://raw.githubusercontent.com/ghostdevv/cari/refs/heads/main/cari.schema.json"
+    },
     "server": {
       "anyOf": [
         {
@@ -136,8 +140,10 @@
           "type": "string"
         },
         "external": {
-          "type": "boolean",
-          "default": false
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "required": [

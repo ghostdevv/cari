@@ -1,10 +1,8 @@
 use color_eyre::eyre::{OptionExt, Result};
-#[cfg(debug_assertions)]
-use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[derive(strum_macros::Display, Debug, Serialize, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
@@ -24,7 +22,7 @@ pub enum Loader {
     Waterfall,
 }
 
-#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Content {
     pub id: String,
@@ -43,7 +41,7 @@ impl Content {
     }
 }
 
-#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[derive(strum_macros::Display, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
@@ -118,7 +116,7 @@ fn default_config_schema_url() -> String {
     "https://raw.githubusercontent.com/ghostdevv/cari/refs/heads/main/cari.schema.json".into()
 }
 
-#[cfg_attr(debug_assertions, derive(JsonSchema))]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -185,18 +183,4 @@ pub fn load_project(path: &PathBuf) -> Result<Option<Project>> {
         .to_string();
 
     Ok(cfg.map(|cfg| Project { name, path, cfg }))
-}
-
-#[cfg(debug_assertions)]
-pub fn write_schema() -> Result<()> {
-    let schema_path = std::env::current_dir()?.join("./cari.schema.json");
-
-    if !schema_path.exists() {
-        std::fs::write(
-            schema_path,
-            serde_json::to_string_pretty(&schema_for!(Config))?,
-        )?;
-    }
-
-    Ok(())
 }

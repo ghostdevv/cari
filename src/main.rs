@@ -3,6 +3,8 @@ use clap::Parser;
 use color_eyre::eyre::{self, Result};
 use ignore::Walk;
 use std::fs::canonicalize;
+#[cfg(feature = "schema")]
+use yansi::Paint;
 
 mod commands;
 mod config;
@@ -12,6 +14,9 @@ mod modrinth;
 #[derive(clap::Parser)]
 #[clap(name = "cari", about, version)]
 enum Cli {
+    #[cfg_attr(feature = "schema", clap(about = "Write the cari.schema.json file"))]
+    #[cfg(feature = "schema")]
+    Schema,
     #[clap(about = "Open all content on modrinth")]
     Open {
         #[clap(short, long)]
@@ -81,9 +86,6 @@ fn load_projects(filter: Option<Vec<String>>) -> Result<Vec<Project>> {
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    #[cfg(debug_assertions)]
-    config::write_schema()?;
-
     let cli = Cli::parse();
 
     match cli {
@@ -111,6 +113,14 @@ async fn main() -> Result<()> {
         }
         Cli::Import { project, item } => {
             commands::import::run(load_projects(project)?, item).await?;
+        }
+        #[cfg(feature = "schema")]
+        Cli::Schema => {
+            std::fs::write(
+                std::env::current_dir()?.join("./cari.schema.json"),
+                serde_json::to_string_pretty(&schemars::schema_for!(config::Config))?,
+            )?;
+            println!(" {} cari.schema.json written", "✔".green());
         }
     }
 
