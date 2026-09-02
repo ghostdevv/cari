@@ -13,6 +13,33 @@ where
     serializer.serialize_str(&json)
 }
 
+#[derive(Debug, Deserialize, PartialEq, Eq, strum_macros::Display)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum ProjectType {
+    Mod,
+    ResourcePack,
+    Modpack,
+    Shader,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Project {
+    pub project_type: ProjectType,
+}
+
+async fn get_project(project_id: &str) -> Result<Project> {
+    Ok(reqwest::ClientBuilder::new()
+        .user_agent(USER_AGENT)
+        .build()?
+        .get(format!("{MODRINTH_BASE_URL}/project/{project_id}"))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<Project>()
+        .await?)
+}
+
 #[derive(Debug, Serialize)]
 struct VersionQuery<'a> {
     #[serde(serialize_with = "as_json_array")]
@@ -75,6 +102,24 @@ pub struct Version {
     #[allow(clippy::struct_field_names)]
     pub version_type: VersionType,
     pub files: Vec<VersionFile>,
+}
+
+impl Version {
+    pub async fn assert_type(self, project_type: &ProjectType) -> Result<Self> {
+        let project = get_project(&self.project_id).await?;
+
+        if project.project_type != *project_type {
+            eyre::bail!(
+                "{} ({}) is not a {} (found a {})",
+                self.project_id,
+                self.id,
+                project_type,
+                project.project_type
+            );
+        }
+
+        Ok(self)
+    }
 }
 
 pub async fn get_project_versions(project: &str) -> Result<Vec<Version>> {

@@ -13,6 +13,8 @@ async fn run_item(project: &Project, item: &Content) -> Result<()> {
         &project.cfg.loader,
         &project.cfg.game_version,
     )
+    .await?
+    .assert_type(&modrinth::ProjectType::Mod)
     .await?;
 
     if latest_version.id == item.version {
@@ -24,7 +26,10 @@ async fn run_item(project: &Project, item: &Content) -> Result<()> {
         );
     } else {
         let current_version =
-            modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader).await?;
+            modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader)
+                .await?
+                .assert_type(&modrinth::ProjectType::Mod)
+                .await?;
 
         println!(
             " {} {} {} -> {}",

@@ -49,8 +49,10 @@ async fn run_item(
     content_dir: &Path,
     dry_run: bool,
 ) -> Result<(PathBuf, Option<Download>)> {
-    let mut version =
-        modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader).await?;
+    let mut version = modrinth::get_project_version(&item.id, &item.version, &project.cfg.loader)
+        .await?
+        .assert_type(&modrinth::ProjectType::Mod)
+        .await?;
 
     if version.files.len() != 1 {
         eyre::bail!("version does not have a single file {:#?}", item)

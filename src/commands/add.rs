@@ -22,8 +22,10 @@ async fn run_item(project: &Project, id: &str) -> Result<Option<Add>> {
         return Ok(None);
     }
 
-    let latest_version =
-        modrinth::get_latest_project_version(id, &cfg.loader, &cfg.game_version).await?;
+    let latest_version = modrinth::get_latest_project_version(id, &cfg.loader, &cfg.game_version)
+        .await?
+        .assert_type(&modrinth::ProjectType::Mod)
+        .await?;
 
     println!(
         " {} {} {}",
