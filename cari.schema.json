@@ -113,7 +113,11 @@
         "folia",
         "spigot",
         "purpur",
-        "neoforge"
+        "neoforge",
+        "forge",
+        "sponge",
+        "bungeecord",
+        "waterfall"
       ]
     },
     "Content": {
