@@ -1,6 +1,6 @@
 [package]
 name = "cari"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 license = "MIT"
 description = "Simple package manager for minecraft servers"
